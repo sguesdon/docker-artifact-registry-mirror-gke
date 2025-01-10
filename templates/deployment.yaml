@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "docker-gcp-private-mirror.fullname" . }}
+  labels:
+    {{- include "docker-gcp-private-mirror.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "docker-gcp-private-mirror.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "docker-gcp-private-mirror.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "docker-gcp-private-mirror.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: nginx
+          securityContext:
+            {{- toYaml .Values.nginx.securityContext | nindent 12 }}
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: http
+          resources:
+            {{- toYaml .Values.nginx.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.nginx.volumeMounts | nindent 12 }}
+            - name: shared-config
+              mountPath: /config
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+        - name: cloud-sdk
+          securityContext:
+            {{- toYaml .Values.cloudSdk.securityContext | nindent 12 }}
+          image: "{{ .Values.cloudSdk.image.repository }}:{{ .Values.cloudSdk.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.cloudSdk.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          command:
+            - '/bin/sh'
+            - '-c'
+            - |
+              while true; do
+                gcloud auth application-default print-access-token | tr -d '\n\t\r ' > /config/token;
+                [ $? -ne 0 ] && exit 1
+                sleep 300
+              done
+          resources:
+            {{- toYaml .Values.cloudSdk.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.cloudSdk.volumeMounts | nindent 12 }}
+            - name: shared-config
+              mountPath: /config
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+        - name: nginx-config
+          configMap:
+            name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-config
+        - name: shared-config
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
