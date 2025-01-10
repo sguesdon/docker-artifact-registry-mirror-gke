@@ -51,7 +51,9 @@ spec:
           resources:
             {{- toYaml .Values.nginx.resources | nindent 12 }}
           volumeMounts:
+            {{- if .Values.nginx.volumeMounts }}
             {{- toYaml .Values.nginx.volumeMounts | nindent 12 }}
+            {{- end }}
             - name: shared-config
               mountPath: /config
             - name: nginx-config
@@ -78,11 +80,15 @@ spec:
           resources:
             {{- toYaml .Values.cloudSdk.resources | nindent 12 }}
           volumeMounts:
+            {{- if .Values.cloudSdk.volumeMounts }}
             {{- toYaml .Values.cloudSdk.volumeMounts | nindent 12 }}
+            {{- end }}
             - name: shared-config
               mountPath: /config
       volumes:
+        {{- if .Values.volumes }}
         {{- toYaml .Values.volumes | nindent 8 }}
+        {{- end }}
         - name: nginx-config
           configMap:
             name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-config

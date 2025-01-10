@@ -5,16 +5,16 @@ nginx:
     repository: mirror.gcr.io/nginx
     pullPolicy: IfNotPresent
     tag: ""
-    volumeMounts: []
-    resources: {}
+  volumeMounts: []
+  resources: {}
 
 cloudSdk:
   image: 
     repository: mirror.gcr.io/google/cloud-sdk
     pullPolicy: IfNotPresent
     tag: ""
-    volumeMounts: []
-    resources: {}
+  volumeMounts: []
+  resources: {}
 
 imagePullSecrets: []
 nameOverride: ""
