@@ -113,6 +113,70 @@
           "store_path": "/nix/store/cgkpjpl1hspg30dlmv4hhvlhbvik1bn1-nodejs-23.2.0"
         }
       }
+    },
+    "yq@latest": {
+      "last_modified": "2024-12-23T21:10:33Z",
+      "resolved": "github:NixOS/nixpkgs/de1864217bfa9b5845f465e771e0ecb48b30e02d#yq",
+      "source": "devbox-search",
+      "version": "3.4.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/cgv2hhnlw4bd0jdj8jvvlcjb9avz1857-python3.12-yq-3.4.3",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/470qg7pi2kycj4lnmy9v0jgarnvm3zk2-python3.12-yq-3.4.3-dist"
+            }
+          ],
+          "store_path": "/nix/store/cgv2hhnlw4bd0jdj8jvvlcjb9avz1857-python3.12-yq-3.4.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/xl3sjpmqqi81ibfkynlxw9v3dmg769f7-python3.12-yq-3.4.3",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/lmnvwnhbspljq4kqn9vrr5i0q8693k0z-python3.12-yq-3.4.3-dist"
+            }
+          ],
+          "store_path": "/nix/store/xl3sjpmqqi81ibfkynlxw9v3dmg769f7-python3.12-yq-3.4.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gi4lccm6b46ga339l801fwyzshhifh0j-python3.12-yq-3.4.3",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/3ywlcss71g4s454kl3q2kipri85k4a16-python3.12-yq-3.4.3-dist"
+            }
+          ],
+          "store_path": "/nix/store/gi4lccm6b46ga339l801fwyzshhifh0j-python3.12-yq-3.4.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/04fz3jg4dbfizdlpzqkpvp3j4p6nwg75-python3.12-yq-3.4.3",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/gpgds87xhyd4jpr048vdirbqpz06wk2d-python3.12-yq-3.4.3-dist"
+            }
+          ],
+          "store_path": "/nix/store/04fz3jg4dbfizdlpzqkpvp3j4p6nwg75-python3.12-yq-3.4.3"
+        }
+      }
     }
   }
 }
