@@ -30,7 +30,9 @@ fi
  
 docker build -t "${FAKE_REGISTRY_IMAGE_NAME}" --no-cache ./tests
 
-kubectl delete --ignore-not-found=true -f ./tests/resources/pod.yaml
+kubectl create namespace "${NAMESPACE}"
+
+kubectl delete --ignore-not-found=true -f ./tests/resources/pod.yaml -n "$NAMESPACE"
 wait_for_pods_to_be_deleted "${NAMESPACE}" "${FAKE_REGISTRY_SELECTOR}"
 
 kubectl apply -f ./tests/resources/pod.yaml -n "$NAMESPACE"
