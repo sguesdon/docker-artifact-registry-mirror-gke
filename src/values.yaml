@@ -10,10 +10,10 @@ nginx:
   securityContext: {}
   tokenFilePath: /config/token
   proxy:
-    bufferSize: '128k'
-    buffers: '4 256k'
-    busyBuffersSize: '256k'
-    largeClientHeaderBuffers: '16 5120k'
+    bufferSize: '256k'
+    buffers: '8 256k'
+    busyBuffersSize: '512k'
+    largeClientHeaderBuffers: '32 5120k'
     upstreamHost: 'europe-docker.pkg.dev'
     upstreamProtocol: 'https'
     rewritePath: 'gcp_project/registry_name'
@@ -29,6 +29,13 @@ cloudSdk:
   resources: {}
   securityContext: {}
   script: null
+  # script: |-
+  #   #!/bin/sh
+  #   while true; do
+  #       gcloud auth application-default print-access-token | tr -d '\n\t\r ' > "${TOKEN_FILE_PATH}";
+  #       [ $? -ne 0 ] && exit 1
+  #       sleep 300
+  #   done
 
 imagePullSecrets: []
 nameOverride: ""
@@ -36,9 +43,11 @@ fullnameOverride: ""
 
 serviceAccount:
   create: true
+  name: ""
   automount: true
   annotations: {}
-  name: ""
+  # annotations:
+  #   iam.gke.io/gcp-service-account: my-gcp-sa@my-sa-project-id.iam.gserviceaccount.com
 
 podAnnotations: {}
 podLabels: {}

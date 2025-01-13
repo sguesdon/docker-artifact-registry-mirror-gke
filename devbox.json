@@ -8,7 +8,8 @@
   "shell": {
     "init_hook": [
       "echo 'Welcome to devbox!' > /dev/null",
-      "(cd ./tests && npm install)"
+      "(cd ./tests/fake-registry && npm install)",
+      "(cd ./tests/helm-chart && helm dependency update)"
     ],
     "scripts": {
       "test": "./resources/scripts/test.sh",

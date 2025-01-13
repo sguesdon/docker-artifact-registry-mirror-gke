@@ -40,7 +40,6 @@ nginx:
     # It is composed of the Google project ID and the name of the Artifact Registry repository.
     rewritePath: "gcp_project/registry_name"
 serviceAccount:
-  name: "gcp-mirror"
   annotations:
     # Properly link the Kubernetes service account with the Google service account so that the sidecar can generate the tokens.
     iam.gke.io/gcp-service-account: my-gcp-sa@my-sa-project-id.iam.gserviceaccount.com

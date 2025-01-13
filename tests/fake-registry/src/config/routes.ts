@@ -2,7 +2,7 @@ export const DOCKER_REGISTRY_VERSION = "v2";
 export const PROJECT_NAME = "test-project";
 export const REGISTRY_NAME = "test-registry-name";
 
-export const MIRROR_HOSTNAME = "private-gcp-mirror";
+export const MIRROR_HOSTNAME = "gcp-mirror";
 export const MOCK_SERVER_HOSTNAME = "fake-registry";
 
 export const ANY_ROUTE_URI = `/any-route/test-image-name`;
