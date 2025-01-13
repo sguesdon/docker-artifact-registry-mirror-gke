@@ -6,8 +6,8 @@ import {
   FORWARDED_MISSING_IMAGE_NAME_URI,
   IMAGE_NAME_URI,
 } from "./config/routes";
-import { Request } from "./server/types/request.type";
-import { SuperTestResponse } from "./server/types/supertest-response.type";
+import { Request } from "./types/request.type";
+import { SuperTestResponse } from "./types/supertest-response.type";
 
 describe("authz cache management", () => {
   it("should success call after reload bearer cache token in mirror service", async () => {

@@ -3,7 +3,7 @@ import {
   FORWARDED_ERROR_IMAGE_NAME_URI,
   FORWARDED_IMAGE_NAME_URI,
   FORWARDED_MISSING_IMAGE_NAME_URI,
-} from "../config/routes";
+} from "./config/routes";
 
 const ServerMock = require("mock-http-server");
 const server = new ServerMock({ host: "0.0.0.0", port: 3000 });

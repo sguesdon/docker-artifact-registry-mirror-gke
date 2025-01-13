@@ -1,5 +1,5 @@
 import { mockServerRequest, mirrorRequest } from "./config/config";
-import { SuperTestResponse } from "./server/types/supertest-response.type";
+import { SuperTestResponse } from "./types/supertest-response.type";
 import {
   ANY_ROUTE_URI,
   FORWARDED_IMAGE_NAME_URI,

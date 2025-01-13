@@ -5,13 +5,13 @@ cloudSdk:
   script: |-
     #!/bin/sh
     while true; do
-        curl http://mirror-test/token > /config/token;
+        curl http://fake-registry/token > /config/token;
         [ $? -ne 0 ] && exit 1
         sleep 1
     done
 nginx:
   proxy:
-    upstreamHost: 'mirror-test'
+    upstreamHost: 'fake-registry'
     upstreamProtocol: http
     rewritePath: 'test-project/test-registry-name'
     maxAuthRetryAttempts: 3

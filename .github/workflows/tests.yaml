@@ -17,5 +17,7 @@ jobs:
         uses: medyagh/setup-minikube@latest
 
       - name: Run tests
+        env:
+          MINIKUBE: true
         run: |
           devbox run test
