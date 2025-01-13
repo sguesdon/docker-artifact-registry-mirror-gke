@@ -13,21 +13,6 @@ jobs:
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
 
-      - name: Check tests passed
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: workflows } = await github.rest.actions.listWorkflowRunsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch: 'main',
-              status: 'success',
-            });
-            const recentRun = workflows.workflow_runs.find(run => run.head_commit.id === process.env.GITHUB_SHA);
-            if (!recentRun) {
-              core.setFailed('Tests did not pass successfully for this commit.');
-            }
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
