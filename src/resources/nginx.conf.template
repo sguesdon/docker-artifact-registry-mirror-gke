@@ -1,15 +1,18 @@
-http {
+# Variables
+# TOKEN_FILE_PATH
+# PROXY_BUFFER_SIZE
+# PROXY_BUFFERS
+# PROXY_BUSY_BUFFERS_SIZE
+# LARGE_CLIENT_HEADER_BUFFERS
+# UPSTREAM_HOST
+# BASE_REWRITE_PATH
+# TOKEN_CACHE_EXPIRATION_SECONDS
+# MAX_AUTH_RETRY_ATTEMPTS
 
-    # Environment variables
-    env TOKEN_FILE_PATH;
-    env PROXY_BUFFER_SIZE;
-    env PROXY_BUFFERS;
-    env PROXY_BUSY_BUFFERS_SIZE;
-    env LARGE_CLIENT_HEADER_BUFFERS;
-    env UPSTREAM_HOST;
-    env BASE_REWRITE_PATH;
-    env TOKEN_CACHE_EXPIRATION_SECONDS;
-    env MAX_AUTH_RETRY_ATTEMPTS;
+events {
+}
+
+http {
 
     lua_shared_dict cache 1m;
 
@@ -26,7 +29,7 @@ http {
 
         -- Load configurations from environment variables
         local token_file_path = getenv_with_default("TOKEN_FILE_PATH", "/config/token")
-        local token_cache_expiration = tonumber(getenv_with_default("TOKEN_CACHE_EXPIRATION_SECONDS", "3600"))
+        local token_cache_expiration = tonumber(getenv_with_default("TOKEN_CACHE_EXPIRATION_SECONDS", "300"))
 
         -- Function to read the token from the file
         function read_token()
@@ -76,12 +79,16 @@ http {
 
         server_name docker-mirror;
 
-        proxy_set_header Host $UPSTREAM_HOST;
+        proxy_intercept_errors on;
+        recursive_error_pages on;
+        error_page 401 = @handle_unauth;
+        error_page 403 = @handle_unauth;
+        proxy_set_header Host ${UPSTREAM_HOST};
         
-        proxy_buffer_size $PROXY_BUFFER_SIZE;
-        proxy_buffers $PROXY_BUFFERS;
-        proxy_busy_buffers_size $PROXY_BUSY_BUFFERS_SIZE;
-        large_client_header_buffers $LARGE_CLIENT_HEADER_BUFFERS;
+        proxy_buffer_size ${PROXY_BUFFER_SIZE};
+        proxy_buffers ${PROXY_BUFFERS};
+        proxy_busy_buffers_size ${PROXY_BUSY_BUFFERS_SIZE};
+        large_client_header_buffers ${LARGE_CLIENT_HEADER_BUFFERS};
 
         access_by_lua_block {
             local token = get_auth_header()
@@ -93,39 +100,46 @@ http {
             end
         }
 
-        header_filter_by_lua_block {
-            local status = ngx.status
-            local max_auth_retry_attempts = tonumber(os.getenv("MAX_AUTH_RETRY_ATTEMPTS")) or 1
+        location @handle_unauth {
+            internal;
+            
+            rewrite_by_lua_block {
+                local retry_attempt = tonumber(ngx.req.get_headers()["X-Retry-Attempt"]) or 1
+                local max_retry_attempts = tonumber(os.getenv("MAX_AUTH_RETRY_ATTEMPTS")) or 3
 
-            if status == 401 or status == 403 then
-                local retry_attempt = ngx.ctx.retry_attempt or 0
-                if retry_attempt < max_auth_retry_attempts then
-                    ngx.log(ngx.NOTICE, "401/403 detected, retrying after refreshing the token")
-                    ngx.ctx.retry_attempt = retry_attempt + 1
-                    get_auth_header(true)
-                    return ngx.exec(ngx.var.request_uri)
+                ngx.log(ngx.ERR, "401/403 detected, retrying after refreshing the token (Attempt: " .. retry_attempt .. "/" .. max_retry_attempts .. ")")
+
+                if retry_attempt < max_retry_attempts then
+                    ngx.req.set_header("X-Retry-Attempt", retry_attempt + 1)
+
+                    local token = get_auth_header(true)
+                    if token then
+                        ngx.req.set_header("Authorization", token)
+                        ngx.exec(ngx.var.request_uri)  -- Relancer la requête
+                    else
+                        ngx.log(ngx.ERR, "Failed to refresh token on retry attempt #" .. retry_attempt)
+                    end
                 else
-                    ngx.status = ngx.HTTP_FORBIDDEN
-                    ngx.log(ngx.ERR, "Maximum retry limit reached, request failed")
+                    ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
                     ngx.say("Access denied after multiple token refresh attempts")
-                    ngx.exit(ngx.HTTP_FORBIDDEN)
+                    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
                 end
-            end
+            }
         }
 
         # Main base URI
         location / {
-            proxy_pass https://$UPSTREAM_HOST;
+            proxy_pass ${UPSTREAM_PROTOCOL}://${UPSTREAM_HOST};
         }
 
         # Base URI for /v2/
         location ~ /v2/ {
-            proxy_pass https://$UPSTREAM_HOST;
+            proxy_pass ${UPSTREAM_PROTOCOL}://${UPSTREAM_HOST};
 
             # URL rewriting specific to /v2/
-            set $base_rewrite_path $BASE_REWRITE_PATH;
+            set $base_rewrite_path ${BASE_REWRITE_PATH};
             if ($request_uri ~* "^/v2/(.+)$") {
-                rewrite ^/v2/(.+)$ $base_rewrite_path/$1 break;
+                rewrite ^/v2/(.+)$ /v2/$base_rewrite_path/$1 break;
             }
         }
     }

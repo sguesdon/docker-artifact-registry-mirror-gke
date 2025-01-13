@@ -31,6 +31,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
+        # Nginx container
         - name: nginx
           securityContext:
             {{- toYaml .Values.nginx.securityContext | nindent 12 }}
@@ -57,26 +58,20 @@ spec:
             - name: shared-config
               mountPath: /config
             - name: nginx-config
-              mountPath: /etc/nginx/nginx.conf
+              mountPath: /etc/nginx/templates/nginx.conf.template
               subPath: nginx.conf
+          envFrom:
+            - configMapRef:
+                name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-env
+        # Cloud SDK sidecar
         - name: cloud-sdk
           securityContext:
             {{- toYaml .Values.cloudSdk.securityContext | nindent 12 }}
           image: "{{ .Values.cloudSdk.image.repository }}:{{ .Values.cloudSdk.image.tag | default "latest" }}"
           imagePullPolicy: {{ .Values.cloudSdk.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
           command:
-            - '/bin/sh'
-            - '-c'
-            - |
-              while true; do
-                gcloud auth application-default print-access-token | tr -d '\n\t\r ' > /config/token;
-                [ $? -ne 0 ] && exit 1
-                sleep 300
-              done
+            - /bin/sh
+            - /tmp/generate-token-file.sh
           resources:
             {{- toYaml .Values.cloudSdk.resources | nindent 12 }}
           volumeMounts:
@@ -85,6 +80,12 @@ spec:
             {{- end }}
             - name: shared-config
               mountPath: /config
+            - name: cloud-sdk-script
+              mountPath: /tmp/generate-token-file.sh
+              subPath: generate-token-file.sh
+          envFrom:
+            - configMapRef:
+                name: {{ include "docker-gcp-private-mirror.fullname" . }}-cloud-sdk-env
       volumes:
         {{- if .Values.volumes }}
         {{- toYaml .Values.volumes | nindent 8 }}
@@ -92,6 +93,9 @@ spec:
         - name: nginx-config
           configMap:
             name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-config
+        - name: cloud-sdk-script
+          configMap:
+            name: {{ include "docker-gcp-private-mirror.fullname" . }}-cloud-sdk-script
         - name: shared-config
           emptyDir: {}
       {{- with .Values.nodeSelector }}

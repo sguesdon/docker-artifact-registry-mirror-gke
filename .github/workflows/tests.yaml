@@ -16,11 +16,6 @@ jobs:
       - name: Start minikube
         uses: medyagh/setup-minikube@latest
 
-      - name: Deploy helm chart
-        run: |
-          helm package . --version=0.0.1
-          helm install private-gcp-mirror ./docker-gcp-private-mirror-0.0.1.tgz
-
       - name: Run tests
         run: |
           devbox run test

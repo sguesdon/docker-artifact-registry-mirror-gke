@@ -2,19 +2,33 @@ replicaCount: 1
 
 nginx:
   image:
-    repository: mirror.gcr.io/nginx
+    repository: fabiocicerchia/nginx-lua
     pullPolicy: IfNotPresent
     tag: ""
   volumeMounts: []
   resources: {}
+  securityContext: {}
+  tokenFilePath: /config/token
+  proxy:
+    bufferSize: '128k'
+    buffers: '4 256k'
+    busyBuffersSize: '256k'
+    largeClientHeaderBuffers: '16 5120k'
+    upstreamHost: 'europe-docker.pkg.dev'
+    upstreamProtocol: 'https'
+    rewritePath: 'gcp_project/registry_name'
+    tokenCacheExpirationSeconds: '300'
+    maxAuthRetryAttempts: '1'
 
 cloudSdk:
-  image: 
+  image:
     repository: mirror.gcr.io/google/cloud-sdk
     pullPolicy: IfNotPresent
     tag: ""
   volumeMounts: []
   resources: {}
+  securityContext: {}
+  script: null
 
 imagePullSecrets: []
 nameOverride: ""
