@@ -54,22 +54,22 @@ Other configurations are available, including settings related to the NGINX cach
 
 ## Requirements to run tests locally
 
-To quickly run the project, you need to use Devbox and direnv. Otherwise, I encourage you to install it: [Install DevBox](https://www.jetify.com/docs/devbox/installing_devbox/) [Install direnv](https://www.jetify.com/docs/devbox/ide_configuration/direnv/)
+To quickly run the project, you need to use [DevBox](https://www.jetify.com/docs/devbox/installing_devbox/) and [direnv](https://www.jetify.com/docs/devbox/ide_configuration/direnv/). I encourage you to install it.
 
 You will need Kubernetes locally to run the tests. Currently, the tests have already been successfully executed on the Kubernetes provided by Docker Desktop and on Minikube.
 
-Before running your tests, you must ensure that `kubectl` is properly configured to connect to your local cluster.
+> Before running your tests, you must ensure that `kubectl` is properly configured to connect to your local cluster.
 
 ## Running tests
 
+> If you are using Minikube, you will need to set the following variable: MINIKUBE=true
+
 ```sh
-# If you are using Minikube, you will need to set the following variable: MINIKUBE=true
 devbox run test
 ```
 
 ## Lint helm chart
 
 ```sh
-# If you are using Minikube, you will need to set the following variable: MINIKUBE=true
 devbox run lint
 ```
