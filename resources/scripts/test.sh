@@ -32,12 +32,13 @@ docker build -t "${FAKE_REGISTRY_IMAGE_NAME}" --no-cache ./tests
 
 kubectl create namespace "${NAMESPACE}"
 
+
 kubectl delete --ignore-not-found=true -f ./tests/resources/pod.yaml -n "$NAMESPACE"
 wait_for_pods_to_be_deleted "${NAMESPACE}" "${FAKE_REGISTRY_SELECTOR}"
 
 kubectl apply -f ./tests/resources/pod.yaml -n "$NAMESPACE"
 echo "Waiting for the Pod to be ready..."
-kubectl wait --for=condition=available "deployment/${FAKE_REGISTRY_DEPLOYMENT_NAME}" --timeout=300s
+kubectl wait --for=condition=available "deployment/${FAKE_REGISTRY_DEPLOYMENT_NAME}" -n "$NAMESPACE" --timeout=300s
 
 helm uninstall "${MIRROR_RELEASE_NAME}" --namespace "${NAMESPACE}" || echo "Helm release not found. Skipping uninstall."
 wait_for_pods_to_be_deleted "${NAMESPACE}" "app.kubernetes.io/instance=${MIRROR_RELEASE_NAME}"
@@ -52,10 +53,10 @@ helm upgrade --install \
     ./docker-gcp-private-mirror-0.0.1.tgz
 
 echo "Waiting for the Pod to be ready..."
-kubectl wait --for=condition=available "deployment/${MIRROR_DEPLOYMENT_NAME}" --timeout=300s
+kubectl wait -n "$NAMESPACE" --timeout=300s --for=condition=available "deployment/${MIRROR_DEPLOYMENT_NAME}"
 
 kubectl get pods -A
 
 # run tests
-POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -l "${FAKE_REGISTRY_SELECTOR}")
+POD_NAME=$(kubectl get pods -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" -l "${FAKE_REGISTRY_SELECTOR}")
 kubectl exec -it "pod/${POD_NAME}" -- npm run test
