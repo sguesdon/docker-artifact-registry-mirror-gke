@@ -7,11 +7,13 @@
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      "echo 'Welcome to devbox!' > /dev/null",
+      "cd ./tests && npm install"
     ],
     "scripts": {
       "test": "./resources/scripts/test.sh",
-      "lint": "./resources/scripts/lint.sh"
+      "lint": "./resources/scripts/lint.sh",
+      "publish": "./resources/scripts/publish.sh \"$@\""
     }
   }
 }
