@@ -33,7 +33,7 @@ docker build -t "${FAKE_REGISTRY_IMAGE_NAME}" --no-cache ./tests
 kubectl delete --ignore-not-found=true -f ./tests/resources/pod.yaml
 wait_for_pods_to_be_deleted "${NAMESPACE}" "${FAKE_REGISTRY_SELECTOR}"
 
-kubectl apply -f ./tests/resources/pod.yaml
+kubectl apply -f ./tests/resources/pod.yaml -n "$NAMESPACE"
 echo "Waiting for the Pod to be ready..."
 kubectl wait --for=condition=available "deployment/${FAKE_REGISTRY_DEPLOYMENT_NAME}" --timeout=300s
 
