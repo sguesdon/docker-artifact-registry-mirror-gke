@@ -31,7 +31,7 @@ fi
 docker build -t "${FAKE_REGISTRY_IMAGE_NAME}" --no-cache ./tests
 
 kubectl create namespace "${NAMESPACE}"
-
+kubens "${NAMESPACE}"
 
 kubectl delete --ignore-not-found=true -f ./tests/resources/pod.yaml -n "$NAMESPACE"
 wait_for_pods_to_be_deleted "${NAMESPACE}" "${FAKE_REGISTRY_SELECTOR}"
@@ -59,4 +59,4 @@ kubectl get pods -A
 
 # run tests
 POD_NAME=$(kubectl get pods -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" -l "${FAKE_REGISTRY_SELECTOR}")
-kubectl exec -it "pod/${POD_NAME}" -- npm run test
+kubectl exec -n "$NAMESPACE" -it "pod/${POD_NAME}" -- npm run test
