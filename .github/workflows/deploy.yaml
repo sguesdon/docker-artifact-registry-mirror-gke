@@ -15,5 +15,5 @@ jobs:
 
       - name: Publish helm chart
         run: |
-          helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          devbox script publish oci://registry-1.docker.io/docker-gcp-private-mirror ${{ github.ref_name }}
+          echo "${{ secrets.DOCKER_PASSWORD }}" | helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          devbox run publish oci://registry-1.docker.io/docker-gcp-private-mirror ${{ github.ref_name }}
