@@ -52,6 +52,8 @@ helm upgrade --install \
 echo "Waiting for the Pod to be ready..."
 kubectl wait --for=condition=available "deployment/${MIRROR_DEPLOYMENT_NAME}" --timeout=300s
 
+kubectl get pods -A
+
 # run tests
 POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -l "${FAKE_REGISTRY_SELECTOR}")
 kubectl exec -it "pod/${POD_NAME}" -- npm run test
