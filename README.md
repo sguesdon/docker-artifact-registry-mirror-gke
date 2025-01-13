@@ -9,11 +9,48 @@ This project was created with the aim of using an image mirror from Artifact Reg
 
 Before proceeding with the installation, you must have deployed an Artifact Registry repository, have a cluster with Workload Identity enabled, and possess a GCP user with permissions to read from your repository.
 
-```sh
+### Command line
 
+```sh
+helm install gcp-mirror oci://registry-1.docker.io/sguesdon/docker-gcp-private-mirror --version 0.0.1
 ```
 
-## Customization
+### Helm chart dependency
+
+```yaml
+# Chart.yaml
+# [...]
+dependencies:
+  - name: docker-gcp-private-mirror
+    alias: gcp-mirror
+    version: 0.0.1
+    repository: oci://registry-1.docker.io/sguesdon
+# [...]
+```
+
+## Required values
+
+```yaml
+fullnameOverride: gcp-mirror
+nginx:
+  proxy:
+    # Depends on the location of your Artifact Registry repository.
+    upstreamHost: "europe-docker.pkg.dev"
+    # This is the missing URI in the mirror configuration to access the repository.
+    # It is composed of the Google project ID and the name of the Artifact Registry repository.
+    rewritePath: "gcp_project/registry_name"
+serviceAccount:
+  name: "gcp-mirror"
+  annotations:
+    # Properly link the Kubernetes service account with the Google service account so that the sidecar can generate the tokens.
+    iam.gke.io/gcp-service-account: my-gcp-sa@my-sa-project-id.iam.gserviceaccount.com
+```
+
+## All values
+
+Other configurations are available, including settings related to the NGINX cache. The behavior of the sidecar responsible for retrieving the Google token can also be modified.
+
+[values.yaml](src/values.yaml)
 
 ## Requirements to run tests locally
 
