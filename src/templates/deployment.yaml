@@ -41,14 +41,9 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          readinessProbe:
-            httpGet:
-              path: /v2/
-              port: http
-          livenessProbe:
-            httpGet:
-              path: /v2/
-              port: http
+          {{- if .Values.nginx.probes }}
+          {{- toYaml .Values.nginx.probes | nindent 10 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.nginx.resources | nindent 12 }}
           volumeMounts:
@@ -69,6 +64,9 @@ spec:
             {{- toYaml .Values.cloudSdk.securityContext | nindent 12 }}
           image: "{{ .Values.cloudSdk.image.repository }}:{{ .Values.cloudSdk.image.tag | default "latest" }}"
           imagePullPolicy: {{ .Values.cloudSdk.image.pullPolicy }}
+          {{- if .Values.cloudSdk.probes }}
+          {{- toYaml .Values.cloudSdk.probes | nindent 10 }}
+          {{- end }}
           command:
             - /bin/sh
             - /tmp/generate-token-file.sh

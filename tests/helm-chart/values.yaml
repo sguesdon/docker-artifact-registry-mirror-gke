@@ -11,6 +11,9 @@ private-gcp-mirror:
           sleep 1
       done
   nginx:
+    probes:
+      readinessProbe:
+        initialDelaySeconds: 30
     proxy:
       upstreamHost: 'fake-registry'
       upstreamProtocol: http

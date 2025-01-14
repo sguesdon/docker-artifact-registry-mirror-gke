@@ -9,6 +9,15 @@ nginx:
   resources: {}
   securityContext: {}
   tokenFilePath: /config/token
+  probes:
+    readinessProbe:
+      httpGet:
+        path: /v2/
+        port: http
+    livenessProbe:
+      httpGet:
+        path: /v2/
+        port: http
   proxy:
     bufferSize: '256k'
     buffers: '8 256k'
@@ -28,6 +37,7 @@ cloudSdk:
   volumeMounts: []
   resources: {}
   securityContext: {}
+  probes: null
   script: null
   # script: |-
   #   #!/bin/sh
