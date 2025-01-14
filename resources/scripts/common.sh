@@ -8,6 +8,6 @@ package_mirror_helm_chart() {
 }
 
 lint_mirror_helm_chart() {
-    echo "--- lint helm chart"
-    helm lint ./src
+  echo "--- lint helm chart"
+  helm lint ./src
 }

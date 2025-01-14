@@ -20,7 +20,7 @@ build_fake_registry_image() {
 
 clean_and_deploy_test_helm_chart() {
   local RELEASE_NAME=$1
-  
+
   echo "--- Uninstall test helm chart"
   helm uninstall "${RELEASE_NAME}" || echo "Skipping uninstall"
   kubectl wait --timeout=300s --for=delete --all "pod"

@@ -7,7 +7,7 @@ This project was created with the aim of using an image mirror from Artifact Reg
 
 ## Installation
 
-Before proceeding with the installation, you must have deployed an Artifact Registry repository, have a cluster with Workload Identity enabled, and possess a GCP user with permissions to read from your repository.
+Before proceeding with the installation, you must have deployed an Artifact Registry repository, have a cluster with Workload Identity enabled, and possess a GCP user with permissions to read from your repository. An (Opentofu example)[tests/tofu] is available in the tests folder without the GKE cluster deployment..
 
 ### Command line
 

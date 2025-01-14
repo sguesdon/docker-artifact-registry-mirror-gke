@@ -1,10 +1,10 @@
 {
-    "overrides": [
-        {
-            "files": "**/*.yaml",
-            "options": {
-                "bracketSpacing": false
-            }
-        }        
-    ]
+  "overrides": [
+    {
+      "files": "**/*.yaml",
+      "options": {
+        "bracketSpacing": false
+      }
+    }
+  ]
 }

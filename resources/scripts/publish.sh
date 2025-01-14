@@ -1,4 +1,5 @@
 #!/bin/bash
+
 VERSION=$2
 REPOSITORY=$1
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
