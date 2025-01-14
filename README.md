@@ -59,6 +59,26 @@ You will need Kubernetes locally to run the tests. Currently, the tests have alr
 
 > Before running your tests, you must ensure that `kubectl` is properly configured to connect to your local cluster.
 
+## Quick Deployment for Testing
+
+If you want to quickly test the solution, you can do so using the Opentofu project located in the [following folder](tests/tofu).
+However, you will need to have gcloud properly configured and an active GKE cluster with Workload Identity enabled.
+
+Before deploying the solution, make sure to fill in the minimum configurations in the `terraform.tfvars` file. The `terraform.tfvars.example` file contains the required information.
+
+```sh
+cd tests/tofu
+tofu init
+tofu apply
+```
+
+After installation, you can quickly test the solution using the following commands:
+
+```sh
+kubectl run dind --rm -it --image=docker:dind --privileged -- --insecure-registry docker-mirror --registry-mirror http://docker-mirror
+kubectl exec -it dind -- docker pull redis:latest
+```
+
 ## Running tests
 
 > If you are using Minikube, you will need to set the following variable: MINIKUBE=true

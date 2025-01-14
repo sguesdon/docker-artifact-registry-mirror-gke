@@ -3,7 +3,8 @@
   "packages": [
     "kubernetes-helm@latest",
     "nodejs@23",
-    "yq@latest"
+    "yq@latest",
+    "opentofu@1.8.8"
   ],
   "shell": {
     "init_hook": [
