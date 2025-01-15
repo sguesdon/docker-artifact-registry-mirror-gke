@@ -1,0 +1,21 @@
+private-gcp-mirror:
+  fullnameOverride: gcp-mirror
+  cloudSdk:
+    image:
+      repository: quay.io/curl/curl
+    script: |-
+      #!/bin/sh
+      while true; do
+          curl http://fake-registry/token > /config/token;
+          [ $? -ne 0 ] && exit 1
+          sleep 1
+      done
+  nginx:
+    probes:
+      readinessProbe:
+        initialDelaySeconds: 30
+    proxy:
+      upstreamHost: "fake-registry"
+      upstreamProtocol: http
+      rewritePath: "test-project/test-registry-name"
+      maxAuthRetryAttempts: 3

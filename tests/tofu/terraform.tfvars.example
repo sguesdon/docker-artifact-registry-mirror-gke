@@ -1,0 +1,8 @@
+google = {
+  project_id = "xxxx"
+}
+
+gke = {
+  cluster_name = "xxxx"
+  location     = "yyyy"
+}

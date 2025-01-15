@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.7/.schema/devbox.schema.json",
+  "packages": [
+    "kubernetes-helm@latest",
+    "nodejs@23",
+    "yq@latest",
+    "opentofu@1.8.8"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null",
+      "(cd ./tests/fake-registry && npm install)",
+      "(cd ./tests/helm-chart && helm dependency update)"
+    ],
+    "scripts": {
+      "test": "./resources/scripts/test.sh",
+      "lint": "./resources/scripts/lint.sh",
+      "publish": "./resources/scripts/publish.sh \"$@\""
+    }
+  }
+}

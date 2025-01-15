@@ -1,0 +1,39 @@
+name: Tests
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+jobs:
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+
+      - name: Start minikube
+        uses: medyagh/setup-minikube@latest
+
+      - name: Run tests
+        env:
+          MINIKUBE: true
+        run: |
+          devbox run test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+
+      - name: Run helm lint
+        run: |
+          devbox run lint

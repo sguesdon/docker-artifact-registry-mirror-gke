@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name {{.Release.Name}}
+  labels:
+    app: *name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+    spec:
+      containers:
+        - name: *name
+          image: *name
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
