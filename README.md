@@ -5,30 +5,11 @@
 
 This project was created with the aim of using an image mirror from Artifact Registry in a Kubernetes cluster (GKE) within Google Cloud Platform. It addresses several issues, the first being the ability to call a mirror that contains a URL with a URI, not just a hostname (it is possible that Containerd now supports this, but that has not always been the case). It also leverages Workload Identity to automatically add an authorization header to all requests sent to the Artifact Registry image mirror.
 
-## Installation
+## Deployment using helm
 
-Before proceeding with the installation, you must have deployed an Artifact Registry repository, have a cluster with Workload Identity enabled, and possess a GCP user with permissions to read from your repository. An (Opentofu example)[tests/tofu] is available in the tests folder without the GKE cluster deployment..
+Before proceeding with the installation, you must have deployed an Artifact Registry repository, have a cluster with Workload Identity enabled, and possess a GCP user with permissions to read from your repository. An (Opentofu example)[tests/tofu] is available in the tests folder without the GKE cluster deployment.
 
-### Command line
-
-```sh
-helm install gcp-mirror oci://registry-1.docker.io/sguesdon/docker-gcp-private-mirror --version 0.0.1
-```
-
-### Helm chart dependency
-
-```yaml
-# Chart.yaml
-# [...]
-dependencies:
-  - name: docker-gcp-private-mirror
-    alias: gcp-mirror
-    version: 0.0.1
-    repository: oci://registry-1.docker.io/sguesdon
-# [...]
-```
-
-## Required values
+### Minimum Configuration
 
 ```yaml
 fullnameOverride: gcp-mirror
@@ -45,11 +26,28 @@ serviceAccount:
     iam.gke.io/gcp-service-account: my-gcp-sa@my-sa-project-id.iam.gserviceaccount.com
 ```
 
+### Command line
+
+```sh
+helm install gcp-mirror oci://registry-1.docker.io/sguesdon/docker-gcp-private-mirror --version 0.0.1
+```
+
+### Using the Helm chart as a Helm dependency
+
+```yaml
+# Chart.yaml
+# [...]
+dependencies:
+  - name: docker-gcp-private-mirror
+    alias: gcp-mirror
+    version: 0.0.1
+    repository: oci://registry-1.docker.io/sguesdon
+# [...]
+```
+
 ## All values
 
-Other configurations are available, including settings related to the NGINX cache. The behavior of the sidecar responsible for retrieving the Google token can also be modified.
-
-[values.yaml](src/values.yaml)
+Other configurations are available, including settings related to the NGINX cache. The behavior of the sidecar responsible for retrieving the Google token can also be modified. All the values are available [here](src/values.yaml).
 
 ## Requirements to run tests locally
 
@@ -64,7 +62,7 @@ You will need Kubernetes locally to run the tests. Currently, the tests have alr
 If you want to quickly test the solution, you can do so using the Opentofu project located in the [following folder](tests/tofu).
 However, you will need to have gcloud properly configured and an active GKE cluster with Workload Identity enabled.
 
-Before deploying the solution, make sure to fill in the minimum configurations in the `terraform.tfvars` file. The `terraform.tfvars.example` file contains the required information.
+Before deploying the solution, make sure to fill in the minimum configurations in the `terraform.tfvars` file. The `terraform.tfvars.example` file contains the minimum required information.
 
 ```sh
 cd tests/tofu
@@ -81,7 +79,9 @@ kubectl exec -it dind -- docker pull redis:latest
 
 ## Running tests
 
-> If you are using Minikube, you will need to set the following variable: MINIKUBE=true
+Before running the tests, ensure that you have a functional Kubernetes cluster in your development environment.
+
+> If you are using Minikube, you will need to set the following variable: `MINIKUBE=true`
 
 ```sh
 devbox run test

@@ -15,7 +15,7 @@ private-gcp-mirror:
       readinessProbe:
         initialDelaySeconds: 30
     proxy:
-      upstreamHost: 'fake-registry'
+      upstreamHost: "fake-registry"
       upstreamProtocol: http
-      rewritePath: 'test-project/test-registry-name'
+      rewritePath: "test-project/test-registry-name"
       maxAuthRetryAttempts: 3

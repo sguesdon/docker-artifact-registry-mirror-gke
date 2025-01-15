@@ -1,7 +1,7 @@
 variable "google" {
   type = object({
     project_id = string
-    region = optional(string, "eu-west9")
+    region     = optional(string, "eu-west9")
   })
   description = "google provider configuration"
 }
@@ -15,9 +15,9 @@ variable "mirror" {
 
 variable "gke" {
   type = object({
-    location = string
+    location     = string
     cluster_name = string
-    namespace = optional(string, "docker-mirror")
+    namespace    = optional(string, "docker-mirror")
   })
   description = "target cluster configuration"
 }

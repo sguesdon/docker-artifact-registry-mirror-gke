@@ -18,10 +18,10 @@ resource "google_service_account" "this" {
 }
 
 resource "google_artifact_registry_repository_iam_binding" "this" {
-  repository    = google_artifact_registry_repository.this.name
-  location = google_artifact_registry_repository.this.location
-  role          = "roles/artifactregistry.reader"
-  members       = ["serviceAccount:${google_service_account.this.email}"]
+  repository = google_artifact_registry_repository.this.name
+  location   = google_artifact_registry_repository.this.location
+  role       = "roles/artifactregistry.reader"
+  members    = ["serviceAccount:${google_service_account.this.email}"]
 }
 
 resource "google_service_account_iam_binding" "this" {
@@ -37,8 +37,8 @@ resource "kubernetes_namespace" "this" {
 }
 
 resource "helm_release" "this" {
-  name       = var.mirror.name
-  namespace  = var.mirror.name
+  name      = var.mirror.name
+  namespace = var.mirror.name
 
   chart      = "docker-gcp-private-mirror"
   repository = "oci://registry-1.docker.io/sguesdon"
@@ -64,5 +64,5 @@ resource "helm_release" "this" {
     value = google_service_account.this.email
   }
 
-  depends_on = [ kubernetes_namespace.this ]
+  depends_on = [kubernetes_namespace.this]
 }
