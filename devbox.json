@@ -4,7 +4,8 @@
     "kubernetes-helm@latest",
     "nodejs@23",
     "yq@latest",
-    "opentofu@1.8.8"
+    "opentofu@1.8.8",
+    "path:.devbox/flakes/gcloud#google-cloud-sdk"
   ],
   "shell": {
     "init_hook": [
