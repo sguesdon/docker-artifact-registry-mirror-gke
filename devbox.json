@@ -14,9 +14,9 @@
       "(cd ./tests/helm-chart && helm dependency update)"
     ],
     "scripts": {
-      "test": "./resources/scripts/test.sh",
-      "lint": "./resources/scripts/lint.sh",
-      "publish": "./resources/scripts/publish.sh \"$@\""
+      "test": "${DEVBOX_PROJECT_ROOT}/resources/scripts/test.sh",
+      "lint": "${DEVBOX_PROJECT_ROOT}/resources/scripts/lint.sh",
+      "publish": "${DEVBOX_PROJECT_ROOT}/resources/scripts/publish.sh \"$@\""
     }
   }
 }
