@@ -4,6 +4,7 @@ package_mirror_helm_chart() {
   VERSION=$1
 
   echo "--- package helm chart"
+  cp README.md ./src/README.md
   helm package ./src --version="${VERSION}"
 }
 
