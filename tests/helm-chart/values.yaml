@@ -13,7 +13,7 @@ private-gcp-mirror:
   nginx:
     probes:
       readinessProbe:
-        initialDelaySeconds: 30
+        initialDelaySeconds: 50
     proxy:
       upstreamHost: "fake-registry"
       upstreamProtocol: http
