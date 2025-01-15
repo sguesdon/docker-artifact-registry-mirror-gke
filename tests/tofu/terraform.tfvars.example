@@ -4,5 +4,5 @@ google = {
 
 gke = {
   cluster_name = "xxxx"
-  location = "yyyy"
+  location     = "yyyy"
 }
