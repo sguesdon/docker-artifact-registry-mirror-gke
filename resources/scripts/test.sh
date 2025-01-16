@@ -25,8 +25,12 @@ clean_and_deploy_test_helm_chart() {
   helm uninstall "${RELEASE_NAME}" || echo "Skipping uninstall"
   kubectl wait --timeout=300s --for=delete --all "pod"
 
+  echo "--- Upgrade local dependencies"
+  rm ./tests/helm-chart/charts/*.tgz
+  helm dependency update ./tests/helm-chart
+
   echo "--- Deploy test helm chart"
-  helm upgrade --dependency-update --install "$RELEASE_NAME" ./tests/helm-chart
+  helm upgrade --install "$RELEASE_NAME" ./tests/helm-chart
   kubectl wait --timeout=300s --for=condition=available --all "deployment"
 }
 
