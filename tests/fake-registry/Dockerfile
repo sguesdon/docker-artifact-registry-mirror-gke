@@ -1,11 +1,12 @@
 FROM node:23-alpine
 
-WORKDIR /usr/src/app
+USER node
+
+WORKDIR /usr/app
 
 COPY package*.json ./
-RUN npm install
-
-RUN npm install -g ts-node typescript
+RUN npm install --ignore-scripts
+RUN npm install --ignore-scripts -g ts-node typescript
 
 COPY . .
 
