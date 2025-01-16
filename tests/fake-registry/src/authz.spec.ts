@@ -3,7 +3,6 @@ import {
   ERROR_IMAGE_NAME_URI,
   FORWARDED_ERROR_IMAGE_NAME_URI,
   FORWARDED_IMAGE_NAME_URI,
-  FORWARDED_MISSING_IMAGE_NAME_URI,
   IMAGE_NAME_URI,
 } from "./config/routes";
 import { Request } from "./types/request.type";
@@ -11,6 +10,20 @@ import { SuperTestResponse } from "./types/supertest-response.type";
 
 describe("authz cache management", () => {
   it("should success call after reload bearer cache token in mirror service", async () => {
+    const token = Date.now().toString();
+
+    const origTokenResponse = await mockServerRequest
+      .get("/token")
+      .set("Content-Type", "text/plain")
+      .buffer(true)
+      .parse((res, cb) => {
+        let data = Buffer.from("");
+        res.on("data", (chunk) => (data = Buffer.concat([data, chunk])));
+        res.on("end", () => cb(null, data.toString()));
+      });
+
+    const origToken = origTokenResponse.body;
+
     // update token parsed by sidecar
     await mockServerRequest
       .put("/token")
@@ -21,7 +34,7 @@ describe("authz cache management", () => {
         res.on("data", (chunk) => (data = Buffer.concat([data, chunk])));
         res.on("end", () => cb(null, data.toString()));
       })
-      .send("xyz");
+      .send(token);
 
     // wait sidecar parse new token calling mock server
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -42,7 +55,7 @@ describe("authz cache management", () => {
       uri: FORWARDED_IMAGE_NAME_URI,
       statusCode: 401,
       headers: expect.objectContaining({
-        authorization: "Bearer abcd",
+        authorization: `Bearer ${origToken}`,
       }),
     });
 
@@ -51,7 +64,7 @@ describe("authz cache management", () => {
       uri: FORWARDED_IMAGE_NAME_URI,
       statusCode: 200,
       headers: expect.objectContaining({
-        authorization: "Bearer xyz",
+        authorization: `Bearer ${token}`,
       }),
     });
   });
