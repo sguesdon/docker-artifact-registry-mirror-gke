@@ -4,7 +4,7 @@ provider "google" {
 }
 
 provider "kubernetes" {
-  host                   = data.google_container_cluster.this.endpoint
+  host                   = "https://${data.google_container_cluster.this.endpoint}"
   token                  = data.google_client_config.this.access_token
   cluster_ca_certificate = base64decode(data.google_container_cluster.this.master_auth.0.cluster_ca_certificate)
 }
