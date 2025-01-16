@@ -1,3 +1,8 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
 bufferSize: "256k"
 buffers: "8 256k"
 busyBuffersSize: "512k"
@@ -8,11 +13,6 @@ rewritePath: "gcp_project/registry_name"
 tokenCacheExpirationSeconds: "300"
 maxAuthRetryAttempts: "1"
 authTokenEndpoint: ""
-
-nameOverride: ""
-fullnameOverride: ""
-
-replicaCount: 1
 
 image:
   repository: nginx-mirror-test
