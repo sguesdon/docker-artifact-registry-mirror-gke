@@ -4,8 +4,10 @@ resource "google_artifact_registry_repository" "this" {
   description   = "Mirror repository for dockerhub images"
   location      = "europe"
   mode          = "REMOTE_REPOSITORY"
+
   remote_repository_config {
     description = "docker hub"
+
     docker_repository {
       public_repository = "DOCKER_HUB"
     }
@@ -31,6 +33,7 @@ resource "google_service_account_iam_binding" "this" {
 }
 
 resource "kubernetes_namespace" "this" {
+  
   metadata {
     name = var.mirror.name
   }
@@ -39,11 +42,8 @@ resource "kubernetes_namespace" "this" {
 resource "helm_release" "this" {
   name      = var.mirror.name
   namespace = var.mirror.name
-
-  chart      = "docker-gcp-private-mirror"
-  repository = "oci://registry-1.docker.io/sguesdon"
-  version    = "0.0.1"
-
+  chart      = "../../src"
+  
   set {
     name  = "fullnameOverride"
     value = var.mirror.name
