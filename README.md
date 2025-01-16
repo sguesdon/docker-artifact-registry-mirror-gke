@@ -1,8 +1,8 @@
-![GitHub License](https://img.shields.io/github/license/sguesdon/docker-gcp-private-mirror)
+![GitHub License](https://img.shields.io/github/license/sguesdon/docker-artifact-registry-mirror-gke)
 [![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
-![Test Status](https://github.com/sguesdon/docker-gcp-private-mirror/actions/workflows/tests.yaml/badge.svg?branch=main)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/docker-gcp-private-mirror)](https://artifacthub.io/packages/helm/docker-gcp-private-mirror/docker-gcp-private-mirror)
-[![Docker hub](https://img.shields.io/docker/v/sguesdon/docker-gcp-private-mirror?logo=docker&label=Docker%20hub)](https://hub.docker.com/r/sguesdon/docker-gcp-private-mirror/builds)
+![Test Status](https://github.com/sguesdon/docker-artifact-registry-mirror-gke/actions/workflows/tests.yaml/badge.svg?branch=main)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/docker-artifact-registry-mirror-gke)](https://artifacthub.io/packages/helm/docker-artifact-registry-mirror-gke/docker-artifact-registry-mirror-gke)
+[![Docker hub](https://img.shields.io/docker/v/sguesdon/docker-artifact-registry-mirror-gke?logo=docker&label=Docker%20hub)](https://hub.docker.com/r/sguesdon/docker-artifact-registry-mirror-gke/builds)
 
 # Docker Artifact Registry Mirror for GKE
 
@@ -11,6 +11,8 @@ This project was created with the aim of using an image mirror from Artifact Reg
 ## Helm deployment
 
 Before proceeding with the installation, you must have deployed an Artifact Registry repository, have a cluster with Workload Identity enabled, and possess a GCP user with permissions to read from your repository. An [Opentofu example](tests/tofu) is available in the tests folder without the GKE cluster deployment.
+
+> If Workload Identity is not enabled, the service account for your workloads must have read permissions on the Artifact Registry repository.
 
 ### Basic configuration
 
@@ -37,7 +39,7 @@ helm install gcp-mirror oci://registry-1.docker.io/sguesdon/docker-artifact-regi
 # Chart.yaml
 # [...]
 dependencies:
-  - name: docker-gcp-private-mirror
+  - name: docker-artifact-registry-mirror-gke
     alias: gcp-mirror
     version: <version>
     repository: oci://registry-1.docker.io/sguesdon
@@ -50,7 +52,7 @@ Other configurations are available, including settings related to the NGINX cach
 
 ## Running tests
 
-To quickly run the project, you need to use [DevBox](https://www.jetify.com/docs/devbox/installing_devbox/) and [direnv](https://www.jetify.com/docs/devbox/ide_configuration/direnv/). I encourage you to install it.
+To quickly run the project, you need to use [DevBox](https://www.jetify.com/docs/devbox/installing_devbox/) and [direnv](https://www.jetify.com/docs/devbox/ide_configuration/direnv/).
 
 You will need Kubernetes locally to run the tests. Currently, the tests have already been successfully executed on the Kubernetes provided by Docker Desktop and on Minikube.
 
@@ -64,7 +66,9 @@ devbox run test
 ## Quick Deployment for Testing
 
 If you want to quickly test the solution, you can do so using the Opentofu project located in the [following folder](tests/tofu).
-However, you will need to have gcloud properly configured and an active GKE cluster with Workload Identity enabled.
+However, you will need to have gcloud properly configured and an active GKE cluster with workload identity.
+
+> If Workload Identity is not enabled, the service account for your workloads must have read permissions on the Artifact Registry repository.
 
 Before deploying the solution, make sure to fill in the minimum configurations in the `terraform.tfvars` file. The `terraform.tfvars.example` file contains the minimum required information.
 
