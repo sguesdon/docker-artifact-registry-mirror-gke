@@ -5,15 +5,24 @@ private-gcp-mirror:
       repository: quay.io/curl/curl
     script: |-
       #!/bin/sh
+
+      URL="http://fake-registry/token"
+
       while true; do
-          curl http://fake-registry/token > /config/token;
-          [ $? -ne 0 ] && exit 1
-          sleep 1
+        STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$URL")
+        if [ "$STATUS" -eq 200 ]; then
+          break
+        else
+          sleep 5
+        fi
+      done
+
+      while true; do
+        curl "$URL" > /config/token;
+        [ $? -ne 0 ] && exit 1
+        sleep 1
       done
   nginx:
-    probes:
-      readinessProbe:
-        initialDelaySeconds: 50
     proxy:
       upstreamHost: "fake-registry"
       upstreamProtocol: http
