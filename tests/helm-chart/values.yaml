@@ -1,6 +1,7 @@
 private-gcp-mirror:
   fullnameOverride: gcp-mirror
   image:
+    repository: nginx-mirror-test
     pullPolicy: Never
     tag: "latest"
   upstreamHost: "fake-registry.mirror-test.svc.cluster.local"
