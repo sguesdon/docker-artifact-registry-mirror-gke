@@ -1,10 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-
 source "${SCRIPT_DIR}/common.sh"
 
-NAMESPACE=mirror-test
+TEST_NAMESPACE=mirror-test
 FAKE_REGISTRY_APP_NAME=fake-registry
 FAKE_REGISTRY_IMAGE_NAME=fake-registry
 TEST_HELM_CHART_RELEASE_NAME=fake-registry
@@ -15,7 +14,7 @@ build_fake_registry_image() {
   local IMAGE_NAME=$2
 
   echo "--- Build fake registry, tests image"
-  docker build -t "${IMAGE_NAME}" --no-cache "${DIR}"
+  docker build --no-cache -t "${IMAGE_NAME}" "${DIR}"
 }
 
 clean_and_deploy_test_helm_chart() {
@@ -56,8 +55,9 @@ configure_env() {
 }
 
 main() {
-  configure_env "${NAMESPACE}"
+  configure_env "${TEST_NAMESPACE}"
   build_fake_registry_image "${TEST_HELM_CHART_DIR}" "${FAKE_REGISTRY_IMAGE_NAME}"
+  build_nginx_image "${NGINX_IMAGE_PATH}" "${NGINX_IMAGE_NAME}"
   clean_and_deploy_test_helm_chart "${TEST_HELM_CHART_RELEASE_NAME}"
   run_tests_in_fake_registry "${FAKE_REGISTRY_APP_NAME}"
 }

@@ -4,7 +4,7 @@
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/docker-gcp-private-mirror)](https://artifacthub.io/packages/helm/docker-gcp-private-mirror/docker-gcp-private-mirror)
 [![Docker hub](https://img.shields.io/docker/v/sguesdon/docker-gcp-private-mirror?logo=docker&label=Docker%20hub)](https://hub.docker.com/r/sguesdon/docker-gcp-private-mirror/builds)
 
-# Docker GCP private mirror
+# Docker Artifact Registry Mirror for GKE
 
 This project was created with the aim of using an image mirror from Artifact Registry in a Kubernetes cluster (GKE) within Google Cloud Platform. It addresses several issues, the first being the ability to call a mirror that contains a URL with a URI, not just a hostname (it is possible that Containerd now supports this, but that has not always been the case). It also leverages Workload Identity to automatically add an authorization header to all requests sent to the Artifact Registry image mirror.
 
@@ -17,23 +17,18 @@ Before proceeding with the installation, you must have deployed an Artifact Regi
 ```yaml
 # values.yaml
 fullnameOverride: gcp-mirror
-nginx:
-  proxy:
-    # Depends on the location of your Artifact Registry repository.
-    upstreamHost: "europe-docker.pkg.dev"
-    # This is the missing URI in the mirror configuration to access the repository.
-    # It is composed of the Google project ID and the name of the Artifact Registry repository.
-    rewritePath: "gcp_project/registry_name"
+upstreamHost: "<artifact_registry_location>-docker.pkg.dev"
+rewritePath: "<gcp_project_id>/<artifact_registry_name>"
 serviceAccount:
   annotations:
-    # Properly link the Kubernetes service account with the Google service account so that the sidecar can generate the tokens.
+    # Do not specify this if you want to use the service account of your nodes.
     iam.gke.io/gcp-service-account: my-gcp-sa@my-sa-project-id.iam.gserviceaccount.com
 ```
 
 ### Command line
 
 ```sh
-helm install gcp-mirror oci://registry-1.docker.io/sguesdon/docker-gcp-private-mirror --version <version>
+helm install gcp-mirror oci://registry-1.docker.io/sguesdon/docker-artifact-registry-mirror-gke --version <version>
 ```
 
 ### Using Helm chart dependencies

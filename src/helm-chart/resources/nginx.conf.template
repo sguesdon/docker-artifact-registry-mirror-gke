@@ -8,11 +8,13 @@
 # BASE_REWRITE_PATH
 # TOKEN_CACHE_EXPIRATION_SECONDS
 # MAX_AUTH_RETRY_ATTEMPTS
+# AUTH_TOKEN_ENDPOINT
 
 events {
 }
 
 http {
+    resolver local=on;
 
     lua_shared_dict cache 1m;
 
@@ -26,25 +28,33 @@ http {
             return value
         end
 
-        local token_file_path = getenv_with_default("TOKEN_FILE_PATH", "/config/token")
-        local token_cache_expiration = tonumber(getenv_with_default("TOKEN_CACHE_EXPIRATION_SECONDS", "300"))
+        local endpoint_token = getenv_with_default("AUTH_TOKEN_ENDPOINT", "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token")
 
-        function read_token()
-            local file = io.open(token_file_path, "r")
-            if not file then
-                ngx.log(ngx.ERR, "Token file not found: " .. token_file_path)
+        local function get_service_account_token()
+
+            local cjson = require "cjson"
+            local http = require "resty.http"
+            local httpc = http.new()
+
+            local res, err = httpc:request_uri(endpoint_token, {
+                method = "GET",
+                headers = {
+                    ["Metadata-Flavor"] = "Google"
+                }
+            })
+            
+            if not res then
+                ngx.log(ngx.ERR, "Failed to get token: ", err)
                 return nil
             end
 
-            local token = file:read("*a")
-            file:close()
-
-            if not token or token == "" then
-                ngx.log(ngx.ERR, "Token file is empty or invalid")
+            if res.status ~= 200 then
+                ngx.log(ngx.ERR, "Unexpected status code: ", res.status)
                 return nil
             end
-
-            return token
+            
+            local body = cjson.decode(res.body)
+            return body.access_token
         end
 
         function get_auth_header(clear_cache)
@@ -55,9 +65,10 @@ http {
                 return auth_header
             end
 
-            local token = read_token()
+            local token = get_service_account_token()
+
             if not token then
-                ngx.log(ngx.ERR, "Failed to read the token file")
+                ngx.log(ngx.ERR, "Failed to get token")
                 return nil
             end
 
@@ -66,8 +77,6 @@ http {
             ngx.log(ngx.NOTICE, "Token successfully loaded")
             return auth_header
         end
-
-        get_auth_header()
     }
 
     server {
@@ -107,16 +116,13 @@ http {
                 if retry_attempt < max_retry_attempts then
                     ngx.req.set_header("X-Retry-Attempt", retry_attempt + 1)
 
-                    local token = get_auth_header(true)
-                    if token then
-                        ngx.req.set_header("Authorization", token)
+                    local auth_header = get_auth_header(true)
+                    if auth_header then
+                        ngx.req.set_header("Authorization", auth_header)
                         ngx.exec(ngx.var.request_uri)
-                    else
-                        ngx.log(ngx.ERR, "Failed to refresh token on retry attempt #" .. retry_attempt)
                     end
                 else
-                    ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-                    ngx.say("Access denied after multiple token refresh attempts")
+                    ngx.log(ngx.ERR, "Failed to refresh token on all retries attempts")
                     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
                 end
             }

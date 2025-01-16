@@ -1,30 +1,10 @@
 private-gcp-mirror:
   fullnameOverride: gcp-mirror
-  cloudSdk:
-    image:
-      repository: quay.io/curl/curl
-    script: |-
-      #!/bin/sh
-
-      URL="http://fake-registry/token"
-
-      while true; do
-        STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$URL")
-        if [ "$STATUS" -eq 200 ]; then
-          break
-        else
-          sleep 5
-        fi
-      done
-
-      while true; do
-        curl "$URL" > /config/token;
-        [ $? -ne 0 ] && exit 1
-        sleep 1
-      done
-  nginx:
-    proxy:
-      upstreamHost: "fake-registry"
-      upstreamProtocol: http
-      rewritePath: "test-project/test-registry-name"
-      maxAuthRetryAttempts: 3
+  image:
+    pullPolicy: Never
+    tag: "latest"
+  upstreamHost: "fake-registry.mirror-test.svc.cluster.local"
+  upstreamProtocol: http
+  rewritePath: "test-project/test-registry-name"
+  maxAuthRetryAttempts: 3
+  authTokenEndpoint: "http://fake-registry.mirror-test.svc.cluster.local/token"
