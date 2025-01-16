@@ -14,8 +14,11 @@ server.on({
   path: "/token",
   reply: {
     status: 200,
-    header: { "Content-Type": "text/plain; charset=UTF-8" },
-    body: () => token,
+    header: { "content-type": "application/json" },
+    body: () =>
+      JSON.stringify({
+        access_token: token,
+      }),
   },
 });
 
@@ -24,11 +27,11 @@ server.on({
   path: "/token",
   reply: {
     status: 200,
-    header: { "Content-Type": "text/plain; charset=UTF-8" },
+    header: { "content-type": "application/json" },
     body: (request: any) => {
-      token = request.body;
+      token = request.body.access_token;
       console.log("updating token with value", token);
-      return token;
+      return JSON.stringify({ access_token: token });
     },
   },
 });

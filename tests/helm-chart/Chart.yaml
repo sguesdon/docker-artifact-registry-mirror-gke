@@ -4,7 +4,7 @@ type: application
 version: 0.0.1
 appVersion: "0.0.1"
 dependencies:
-  - name: docker-gcp-private-mirror
+  - name: docker-artifact-registry-mirror-gke
     alias: private-gcp-mirror
-    version: 0.0.1
-    repository: file://../../src
+    version: 1.0.0
+    repository: file://../../src/helm-chart

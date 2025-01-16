@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-config
+data:
+  nginx.conf: |-
+    {{- .Files.Get "resources/nginx.conf.template" | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-env
+data:
+  NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+  PROXY_BUFFER_SIZE: {{ .Values.bufferSize | quote }}
+  PROXY_BUFFERS: {{ .Values.buffers | quote }}
+  PROXY_BUSY_BUFFERS_SIZE: {{ .Values.busyBuffersSize | quote }}
+  LARGE_CLIENT_HEADER_BUFFERS: {{ .Values.largeClientHeaderBuffers | quote }}
+  UPSTREAM_HOST: {{ .Values.upstreamHost | quote }}
+  UPSTREAM_PROTOCOL: {{ .Values.upstreamProtocol | quote }}
+  BASE_REWRITE_PATH: {{ .Values.rewritePath | quote }}
+  TOKEN_CACHE_EXPIRATION_SECONDS: {{ .Values.tokenCacheExpirationSeconds | quote }}
+  MAX_AUTH_RETRY_ATTEMPTS: {{ .Values.maxAuthRetryAttempts | quote }}
+  AUTH_TOKEN_ENDPOINT: {{ .Values.authTokenEndpoint | quote }}
+

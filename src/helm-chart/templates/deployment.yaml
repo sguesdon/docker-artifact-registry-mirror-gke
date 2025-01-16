@@ -34,56 +34,28 @@ spec:
         # Nginx container
         - name: nginx
           securityContext:
-            {{- toYaml .Values.nginx.securityContext | nindent 12 }}
-          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag | default "latest" }}"
-          imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          {{- if .Values.nginx.probes }}
-          {{- toYaml .Values.nginx.probes | nindent 10 }}
+          {{- if .Values.probes }}
+          {{- toYaml .Values.probes | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.nginx.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- if .Values.nginx.volumeMounts }}
-            {{- toYaml .Values.nginx.volumeMounts | nindent 12 }}
+            {{- if .Values.volumeMounts }}
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
             {{- end }}
-            - name: shared-config
-              mountPath: /config
             - name: nginx-config
               mountPath: /etc/nginx/templates/nginx.conf.template
               subPath: nginx.conf
           envFrom:
             - configMapRef:
                 name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-env
-        # Cloud SDK sidecar
-        - name: cloud-sdk
-          securityContext:
-            {{- toYaml .Values.cloudSdk.securityContext | nindent 12 }}
-          image: "{{ .Values.cloudSdk.image.repository }}:{{ .Values.cloudSdk.image.tag | default "latest" }}"
-          imagePullPolicy: {{ .Values.cloudSdk.image.pullPolicy }}
-          {{- if .Values.cloudSdk.probes }}
-          {{- toYaml .Values.cloudSdk.probes | nindent 10 }}
-          {{- end }}
-          command:
-            - /bin/sh
-            - /tmp/generate-token-file.sh
-          resources:
-            {{- toYaml .Values.cloudSdk.resources | nindent 12 }}
-          volumeMounts:
-            {{- if .Values.cloudSdk.volumeMounts }}
-            {{- toYaml .Values.cloudSdk.volumeMounts | nindent 12 }}
-            {{- end }}
-            - name: shared-config
-              mountPath: /config
-            - name: cloud-sdk-script
-              mountPath: /tmp/generate-token-file.sh
-              subPath: generate-token-file.sh
-          envFrom:
-            - configMapRef:
-                name: {{ include "docker-gcp-private-mirror.fullname" . }}-cloud-sdk-env
       volumes:
         {{- if .Values.volumes }}
         {{- toYaml .Values.volumes | nindent 8 }}
@@ -91,9 +63,6 @@ spec:
         - name: nginx-config
           configMap:
             name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-config
-        - name: cloud-sdk-script
-          configMap:
-            name: {{ include "docker-gcp-private-mirror.fullname" . }}-cloud-sdk-script
         - name: shared-config
           emptyDir: {}
       {{- with .Values.nodeSelector }}

@@ -3,7 +3,6 @@ import {
   ERROR_IMAGE_NAME_URI,
   FORWARDED_ERROR_IMAGE_NAME_URI,
   FORWARDED_IMAGE_NAME_URI,
-  FORWARDED_MISSING_IMAGE_NAME_URI,
   IMAGE_NAME_URI,
 } from "./config/routes";
 import { Request } from "./types/request.type";
@@ -11,49 +10,51 @@ import { SuperTestResponse } from "./types/supertest-response.type";
 
 describe("authz cache management", () => {
   it("should success call after reload bearer cache token in mirror service", async () => {
-    // update token parsed by sidecar
-    await mockServerRequest
-      .put("/token")
-      .set("Content-Type", "text/plain")
-      .buffer(true)
-      .parse((res, cb) => {
-        let data = Buffer.from("");
-        res.on("data", (chunk) => (data = Buffer.concat([data, chunk])));
-        res.on("end", () => cb(null, data.toString()));
-      })
-      .send("xyz");
+    const token = Date.now().toString();
 
-    // wait sidecar parse new token calling mock server
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // first time call mirror server to load token
+    await mirrorRequest.get(IMAGE_NAME_URI);
+
+    // get orig token and update token
+    const origTokenResponse = await mockServerRequest.get("/token");
+    const origToken = origTokenResponse.body.access_token;
+    await mockServerRequest.put("/token").send({ access_token: token });
 
     // call mirror server
-    const mirrorResponse = await mirrorRequest.get(IMAGE_NAME_URI);
-
-    expect(mirrorResponse.statusCode).toEqual(200);
+    await mirrorRequest.get(IMAGE_NAME_URI);
 
     const { body: mockServerRequests }: SuperTestResponse<Request[]> =
       await mockServerRequest
         .get("/requests")
         .query({ query: JSON.stringify({ path: FORWARDED_IMAGE_NAME_URI }) });
 
-    // first call bearer is invalid and mock server return 401
-    expect(mockServerRequests).toHaveLength(2);
-    expect(mockServerRequests[0]).toMatchObject({
-      uri: FORWARDED_IMAGE_NAME_URI,
-      statusCode: 401,
-      headers: expect.objectContaining({
-        authorization: "Bearer abcd",
-      }),
-    });
+    const requests = [
+      {
+        statusCode: 200,
+        headers: expect.objectContaining({
+          authorization: `Bearer ${origToken}`,
+        }),
+      },
+      {
+        uri: FORWARDED_IMAGE_NAME_URI,
+        statusCode: 401,
+        headers: expect.objectContaining({
+          authorization: `Bearer ${origToken}`,
+        }),
+      },
+      {
+        uri: FORWARDED_IMAGE_NAME_URI,
+        statusCode: 200,
+        headers: expect.objectContaining({
+          authorization: `Bearer ${token}`,
+        }),
+      },
+    ];
 
-    // after cache reload, mirror use updated bearer and mock server return 200
-    expect(mockServerRequests[1]).toMatchObject({
-      uri: FORWARDED_IMAGE_NAME_URI,
-      statusCode: 200,
-      headers: expect.objectContaining({
-        authorization: "Bearer xyz",
-      }),
-    });
+    expect(mockServerRequests).toHaveLength(3);
+    requests.forEach((request, index) =>
+      expect(request).toMatchObject(requests[index])
+    );
   });
 
   it("should failed because unauthorized", async () => {

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-package_mirror_helm_chart() {
-  VERSION=$1
+export HELM_DIR="src/helm-chart/"
+export NGINX_IMAGE_NAME=nginx-mirror-test
+export NGINX_IMAGE_PATH=./src/docker
 
-  echo "--- package helm chart"
-  helm package ./src --version="${VERSION}"
-}
+build_nginx_image() {
+    local DIR=$1
+    local IMAGE_NAME=$2
 
-lint_mirror_helm_chart() {
-  echo "--- lint helm chart"
-  helm lint ./src
+    echo "--- Build nginx image"
+    docker build --no-cache -t "${IMAGE_NAME}" "${DIR}"
 }
