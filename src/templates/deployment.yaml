@@ -55,6 +55,9 @@ spec:
             - name: nginx-config
               mountPath: /etc/nginx/templates/nginx.conf.template
               subPath: nginx.conf
+            - name: scripts
+              mountPath: /docker-entrypoint.d/99-wait-token-file.sh
+              subPath: wait-token-file.sh
           envFrom:
             - configMapRef:
                 name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-env
@@ -78,7 +81,7 @@ spec:
             {{- end }}
             - name: shared-config
               mountPath: /config
-            - name: cloud-sdk-script
+            - name: scripts
               mountPath: /tmp/generate-token-file.sh
               subPath: generate-token-file.sh
           envFrom:
@@ -88,12 +91,13 @@ spec:
         {{- if .Values.volumes }}
         {{- toYaml .Values.volumes | nindent 8 }}
         {{- end }}
+        - name: scripts
+          configMap:
+            name: {{ include "docker-gcp-private-mirror.fullname" . }}-scripts
+            defaultMode: 0777
         - name: nginx-config
           configMap:
             name: {{ include "docker-gcp-private-mirror.fullname" . }}-nginx-config
-        - name: cloud-sdk-script
-          configMap:
-            name: {{ include "docker-gcp-private-mirror.fullname" . }}-cloud-sdk-script
         - name: shared-config
           emptyDir: {}
       {{- with .Values.nodeSelector }}

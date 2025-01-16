@@ -26,10 +26,12 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "docker-gcp-private-mirror.fullname" . }}-cloud-sdk-script
+  name: {{ include "docker-gcp-private-mirror.fullname" . }}-scripts
 data:
   generate-token-file.sh: |-
     {{- .Values.cloudSdk.script | default (.Files.Get "resources/generate-token-file.sh") | nindent 4 }}
+  wait-token-file.sh: |-
+    {{- .Files.Get "resources/wait-token-file.sh" | nindent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
