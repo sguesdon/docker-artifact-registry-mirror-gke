@@ -137,5 +137,12 @@ http {
                 rewrite ^/v2/(.+)$ /v2/$base_rewrite_path/$1 break;
             }
         }
+
+        # Health check
+        location = /health {
+            access_log off;
+            add_header 'Content-Type' 'application/json';
+            return 200 '{"status":"up"}';
+        }
     }
 }

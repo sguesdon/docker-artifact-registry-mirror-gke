@@ -12,22 +12,22 @@ nginx:
   probes:
     readinessProbe:
       httpGet:
-        path: /v2/
+        path: /health
         port: http
     livenessProbe:
       httpGet:
-        path: /v2/
+        path: /health
         port: http
   proxy:
-    bufferSize: '256k'
-    buffers: '8 256k'
-    busyBuffersSize: '512k'
-    largeClientHeaderBuffers: '32 5120k'
-    upstreamHost: 'europe-docker.pkg.dev'
-    upstreamProtocol: 'https'
-    rewritePath: 'gcp_project/registry_name'
-    tokenCacheExpirationSeconds: '300'
-    maxAuthRetryAttempts: '1'
+    bufferSize: "256k"
+    buffers: "8 256k"
+    busyBuffersSize: "512k"
+    largeClientHeaderBuffers: "32 5120k"
+    upstreamHost: "europe-docker.pkg.dev"
+    upstreamProtocol: "https"
+    rewritePath: "gcp_project/registry_name"
+    tokenCacheExpirationSeconds: "300"
+    maxAuthRetryAttempts: "1"
 
 cloudSdk:
   image:
