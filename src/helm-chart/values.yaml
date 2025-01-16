@@ -15,7 +15,7 @@ maxAuthRetryAttempts: "1"
 authTokenEndpoint: ""
 
 image:
-  repository: nginx-mirror-test
+  repository: sguesdon/gke-nginx-mirror-gke
   pullPolicy: IfNotPresent
   tag: ""
 imagePullSecrets: []
