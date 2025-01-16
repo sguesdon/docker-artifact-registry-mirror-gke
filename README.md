@@ -1,7 +1,8 @@
+![GitHub License](https://img.shields.io/github/license/sguesdon/docker-gcp-private-mirror)
 [![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
 ![Test Status](https://github.com/sguesdon/docker-gcp-private-mirror/actions/workflows/tests.yaml/badge.svg?branch=main)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/docker-gcp-private-mirror)](https://artifacthub.io/packages/search?repo=docker-gcp-private-mirror)
-[![Docker hub](https://img.shields.io/docker/cloud/build/sguesdon/docker-gcp-private-mirror?label=Docker)](https://hub.docker.com/r/sguesdon/docker-gcp-private-mirror/builds)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/docker-gcp-private-mirror)](https://artifacthub.io/packages/helm/docker-gcp-private-mirror/docker-gcp-private-mirror)
+[![Docker hub](https://img.shields.io/docker/v/sguesdon/docker-gcp-private-mirror?logo=docker&label=Docker%20hub)](https://hub.docker.com/r/sguesdon/docker-gcp-private-mirror/builds)
 
 # Docker GCP private mirror
 
