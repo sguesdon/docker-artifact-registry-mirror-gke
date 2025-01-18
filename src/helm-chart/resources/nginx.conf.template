@@ -109,11 +109,12 @@ http {
             
             rewrite_by_lua_block {
                 local retry_attempt = tonumber(ngx.req.get_headers()["X-Retry-Attempt"]) or 1
+                ngx.log(ngx.ERR, os.getenv("MAX_AUTH_RETRY_ATTEMPTS") .. "toto")
                 local max_retry_attempts = tonumber(os.getenv("MAX_AUTH_RETRY_ATTEMPTS")) or 3
 
                 ngx.log(ngx.ERR, "401/403 detected, retrying after refreshing the token (Attempt: " .. retry_attempt .. "/" .. max_retry_attempts .. ")")
 
-                if retry_attempt < max_retry_attempts then
+                if retry_attempt < max_retry_attempts or (max_retry_attempts == 1 and retry_attempt == max_retry_attempts) then
                     ngx.req.set_header("X-Retry-Attempt", retry_attempt + 1)
 
                     local auth_header = get_auth_header(true)
