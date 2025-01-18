@@ -48,7 +48,7 @@ dependencies:
 
 ## Advanced Configuration
 
-Other configurations are available, including settings related to the NGINX cache. The behavior of the sidecar responsible for retrieving the Google token can also be modified. All the values are available [here](src/values.yaml).
+Other configurations are available, including settings related to the NGINX cache. The behavior of the sidecar responsible for retrieving the Google token can also be modified. All the values are available [here](src/helm-chart/values.yaml).
 
 ## Running tests
 
@@ -63,9 +63,9 @@ You will need Kubernetes locally to run the tests. Currently, the tests have alr
 devbox run test
 ```
 
-## Quick Deployment for Testing
+## Quick GCP Deployment for Testing
 
-If you want to quickly test the solution, you can do so using the Opentofu project located in the [following folder](tests/tofu).
+If you want to quickly test the solution on GCP, you can do so using the Opentofu project located in the [following folder](tests/tofu).
 However, you will need to have gcloud properly configured and an active GKE cluster with workload identity.
 
 > If Workload Identity is not enabled, the service account for your workloads must have read permissions on the Artifact Registry repository.

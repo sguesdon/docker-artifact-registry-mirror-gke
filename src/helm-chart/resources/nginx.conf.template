@@ -113,7 +113,7 @@ http {
 
                 ngx.log(ngx.ERR, "401/403 detected, retrying after refreshing the token (Attempt: " .. retry_attempt .. "/" .. max_retry_attempts .. ")")
 
-                if retry_attempt < max_retry_attempts then
+                if retry_attempt < max_retry_attempts or (max_retry_attempts == 1 and retry_attempt == max_retry_attempts) then
                     ngx.req.set_header("X-Retry-Attempt", retry_attempt + 1)
 
                     local auth_header = get_auth_header(true)
