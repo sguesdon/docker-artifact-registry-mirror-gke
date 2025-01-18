@@ -6,5 +6,5 @@ appVersion: "0.0.1"
 dependencies:
   - name: docker-artifact-registry-mirror-gke
     alias: private-gcp-mirror
-    version: 1.0.0
+    version: "*"
     repository: file://../../src/helm-chart
