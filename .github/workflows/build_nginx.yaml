@@ -25,7 +25,7 @@ jobs:
         id: get_version
         run: |
           docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest nginx -v 2>&1 > nginx_version.txt
-          NGINX_VERSION=$(tail -n 1 nginx_version.txt)
+          NGINX_VERSION=$(tail -n 1 nginx_version.txt | awk -F'/' '{print $2}' | tr -d '\n')
           rm nginx_version.txt
           echo "Nginx version: $NGINX_VERSION"
           echo "NGINX_VERSION=$NGINX_VERSION" >> $GITHUB_ENV
