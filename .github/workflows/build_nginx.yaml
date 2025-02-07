@@ -24,7 +24,7 @@ jobs:
       - name: Run Docker container and get Nginx version
         id: get_version
         run: |
-          docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest -- nginx -v 2>&1 > nginx_version.txt
+          docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest -- nginx -v > nginx_version.txt 2>&1
           echo "-----"
           cat nginx_version.txt
           echo "-----"
