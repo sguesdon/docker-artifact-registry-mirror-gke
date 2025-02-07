@@ -25,6 +25,7 @@ jobs:
         id: get_version
         run: |
           docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest nginx -v > nginx_version.txt
+          cat nginx_version.txt
           NGINX_VERSION=$(tail -n 1 nginx_version.txt | awk -F'/' '{print $2}')
           rm nginx_version.txt
           echo "Nginx version: $NGINX_VERSION"
