@@ -25,9 +25,6 @@ jobs:
         id: get_version
         run: |
           docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest -- nginx -v > nginx_version.txt 2>&1
-          echo "-----"
-          cat nginx_version.txt
-          echo "-----"
           NGINX_VERSION=$(cat nginx_version.txt | grep 'nginx version' | awk -F'/' '{print $2}')
           rm nginx_version.txt
           echo "Nginx version: $NGINX_VERSION"
@@ -36,7 +33,7 @@ jobs:
       - name: Check if Docker image exists in registry
         id: check_image
         run: |
-          IMAGE_TAG_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/$DOCKER_REGISTRY/$IMAGE_NAME/tags/$NGINX_VERSION/)
+          IMAGE_TAG_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/$DOCKER_REGISTRY/$IMAGE_NAME/tags/$NGINX_VERSION/ | grep -o '[0-9]*')
 
           if [ "$IMAGE_TAG_EXISTS" == "200" ]; then
             echo "Image already exists. Skipping push and PR creation."
@@ -44,6 +41,7 @@ jobs:
           else
             echo "Image does not exist. Will push and create PR."
             echo "EXISTING_IMAGE=false" >> $GITHUB_ENV
+          fi
 
       - name: Push Docker image if not exists
         if: env.EXISTING_IMAGE == 'false'
