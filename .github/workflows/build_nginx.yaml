@@ -76,7 +76,7 @@ jobs:
 
       - name: Create Pull Request for Helm chart update
         if: env.EXISTING_IMAGE == 'false'
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "Update Helm chart to version $NGINX_VERSION"
           branch: update-helm-chart-$NGINX_VERSION
