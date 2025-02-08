@@ -66,7 +66,7 @@ jobs:
           elif [ "$NGINX_MINOR" -gt "$NGINX_CURRENT_MINOR" ]; then
             NEW_HELM_VERSION="$CURRENT_MAJOR.$((CURRENT_MINOR + 1)).0"
           elif [ "$NGINX_PATCH" -gt "$NGINX_CURRENT_PATCH" ]; then
-            NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((NGINX_CURRENT_PATCH + 1))"
+            NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((CURRENT_PATCH + 1))"
           fi
 
           echo "Updating Helm chart to version: $NEW_HELM_VERSION"
