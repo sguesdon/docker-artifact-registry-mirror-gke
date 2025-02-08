@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     env:
       IMAGE_NAME: gke-nginx-mirror-gke
       DOCKER_REGISTRY: sguesdon
@@ -48,7 +51,7 @@ jobs:
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           docker tag $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_REGISTRY/$IMAGE_NAME:$NGINX_VERSION
-          docker push $DOCKER_REGISTRY/$IMAGE_NAME:$NGINX_VERSION
+          # docker push $DOCKER_REGISTRY/$IMAGE_NAME:$NGINX_VERSION
 
       - name: Update Helm chart version logically
         if: env.EXISTING_IMAGE == 'false'
@@ -79,7 +82,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "Update Helm chart to version $NGINX_VERSION"
-          branch: update-helm-chart-$NGINX_VERSION
+          branch: chore/nginx-update-$NGINX_VERSION
           title: "Update Helm chart to version $NGINX_VERSION"
           body: "This PR updates the Helm chart to use Nginx version $NGINX_VERSION."
           base: main
