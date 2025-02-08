@@ -50,12 +50,12 @@ resource "helm_release" "this" {
   }
 
   set {
-    name  = "nginx.proxy.upstreamHost"
+    name  = "upstreamHost"
     value = "${google_artifact_registry_repository.this.location}-docker.pkg.dev"
   }
 
   set {
-    name  = "nginx.proxy.rewritePath"
+    name  = "rewritePath"
     value = "${google_artifact_registry_repository.this.project}/${google_artifact_registry_repository.this.repository_id}"
   }
 
