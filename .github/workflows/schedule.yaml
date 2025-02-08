@@ -1,0 +1,84 @@
+name: Scheduler
+on:
+  schedule:
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+jobs:
+  build-and-publish-nginx-image:
+    runs-on: ubuntu-latest
+    name: Build, publish nginx docker image
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      IMAGE_NAME: gke-nginx-mirror-gke
+      DOCKER_REGISTRY: sguesdon
+      DOCKER_PATH: ./src/docker
+      HELM_CHART_PATH: ./src/helm-chart
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
+
+      - name: Run Docker container and get Nginx version
+        id: get_version
+        run: |
+          docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest -- nginx -v > nginx_version.txt 2>&1
+          NGINX_VERSION=$(cat nginx_version.txt | grep 'nginx version' | awk -F'/' '{print $2}')
+          rm nginx_version.txt
+          echo "Nginx version: $NGINX_VERSION"
+          echo "NGINX_VERSION=$NGINX_VERSION" >> $GITHUB_ENV
+
+      - name: Check if Docker image exists in registry
+        id: check_image
+        run: |
+          IMAGE_TAG_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/$DOCKER_REGISTRY/$IMAGE_NAME/tags/$NGINX_VERSION/ | grep -o '[0-9]*')
+
+          if [ "$IMAGE_TAG_EXISTS" == "200" ]; then
+            echo "Image already exists. Skipping push and PR creation."
+            echo "EXISTING_IMAGE=true" >> $GITHUB_ENV
+          else
+            echo "Image does not exist. Will push and create PR."
+            echo "EXISTING_IMAGE=false" >> $GITHUB_ENV
+          fi
+
+      - name: Push Docker image if not exists
+        if: env.EXISTING_IMAGE == 'false'
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker tag $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_REGISTRY/$IMAGE_NAME:$NGINX_VERSION
+          # docker push $DOCKER_REGISTRY/$IMAGE_NAME:$NGINX_VERSION
+
+      - name: Update Helm chart version logically
+        if: env.EXISTING_IMAGE == 'false'
+        run: |
+          CURRENT_HELM_VERSION=$(grep '^version:' $HELM_CHART_PATH/Chart.yaml | awk '{print $2}')
+          CURRENT_NGINX_VERSION=$(grep '^appVersion:' $HELM_CHART_PATH/Chart.yaml | awk '{print $2}')
+
+          IFS='.' read -r CURRENT_MAJOR CURRENT_MINOR CURRENT_PATCH <<< "$CURRENT_HELM_VERSION"
+          IFS='.' read -r NGINX_CURRENT_MAJOR NGINX_CURRENT_MINOR NGINX_CURRENT_PATCH <<< "$CURRENT_NGINX_VERSION"
+          IFS='.' read -r NGINX_MAJOR NGINX_MINOR NGINX_PATCH <<< "$NGINX_VERSION"
+
+          if [ "$NGINX_MAJOR" -gt "$NGINX_CURRENT_MAJOR" ]; then
+            NEW_HELM_VERSION="$((CURRENT_MAJOR + 1)).0.0"
+          elif [ "$NGINX_MINOR" -gt "$NGINX_CURRENT_MINOR" ]; then
+            NEW_HELM_VERSION="$CURRENT_MAJOR.$((CURRENT_MINOR + 1)).0"
+          elif [ "$NGINX_PATCH" -gt "$NGINX_CURRENT_PATCH" ]; then
+            NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((NGINX_CURRENT_PATCH + 1))"
+          fi
+
+          echo "Updating Helm chart to version: $NEW_HELM_VERSION"
+          sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" $HELM_CHART_PATH/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"$NGINX_VERSION\"/" $HELM_CHART_PATH/Chart.yaml
+
+      - name: Create Pull Request for Helm chart update
+        if: env.EXISTING_IMAGE == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "update(nginx): update nginx version ${{ env.NGINX_VERSION }}"
+          branch: chore/nginx-update-${{ env.NGINX_VERSION }}
+          title: "update(nginx): update nginx version ${{ env.NGINX_VERSION }}"
+          body: "@sguesdon please review this PR to update the nginx version in the Helm chart."
+          base: main
