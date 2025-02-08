@@ -1,13 +1,12 @@
-name: Build nginx image
+name: Scheduler
 on:
-  pull_request:
-    branches:
-      - main
-  # schedule:
-  #   - cron: "15 4,5 * * *"
+  schedule:
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
 jobs:
-  build-and-publish:
+  build-and-publish-nginx-image:
     runs-on: ubuntu-latest
+    name: Build, publish nginx docker image
     permissions:
       contents: write
       pull-requests: write
@@ -16,7 +15,6 @@ jobs:
       DOCKER_REGISTRY: sguesdon
       DOCKER_PATH: ./src/docker
       HELM_CHART_PATH: ./src/helm-chart
-
     steps:
       - uses: actions/checkout@v4
 
@@ -70,8 +68,6 @@ jobs:
           elif [ "$NGINX_PATCH" -gt "$NGINX_CURRENT_PATCH" ]; then
             NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((NGINX_CURRENT_PATCH + 1))"
           fi
-
-          echo "$NEW_HELM_VERSION"
 
           echo "Updating Helm chart to version: $NEW_HELM_VERSION"
           sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" $HELM_CHART_PATH/Chart.yaml
