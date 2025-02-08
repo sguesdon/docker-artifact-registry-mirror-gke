@@ -81,8 +81,8 @@ jobs:
         if: env.EXISTING_IMAGE == 'false'
         uses: peter-evans/create-pull-request@v7
         with:
-          commit-message: "Update Helm chart to version $NGINX_VERSION"
-          branch: chore/nginx-update-$NGINX_VERSION
-          title: "Update Helm chart to version $NGINX_VERSION"
-          body: "This PR updates the Helm chart to use Nginx version $NGINX_VERSION."
+          commit-message: "update(nginx): update nginx version ${{ env.NGINX_VERSION }}"
+          branch: chore/nginx-update-${{ env.NGINX_VERSION }}
+          title: "update(nginx): update nginx version ${{ env.NGINX_VERSION }}"
+          body: "@sguesdon please review this PR to update the nginx version in the Helm chart."
           base: main
