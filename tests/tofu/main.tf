@@ -33,7 +33,7 @@ resource "google_service_account_iam_binding" "this" {
 }
 
 resource "kubernetes_namespace" "this" {
-  
+
   metadata {
     name = var.mirror.name
   }
@@ -42,20 +42,20 @@ resource "kubernetes_namespace" "this" {
 resource "helm_release" "this" {
   name      = var.mirror.name
   namespace = var.mirror.name
-  chart      = "../../src"
-  
+  chart     = "../../src/helm-chart"
+
   set {
     name  = "fullnameOverride"
     value = var.mirror.name
   }
 
   set {
-    name  = "nginx.proxy.upstreamHost"
+    name  = "upstreamHost"
     value = "${google_artifact_registry_repository.this.location}-docker.pkg.dev"
   }
 
   set {
-    name  = "nginx.proxy.rewritePath"
+    name  = "rewritePath"
     value = "${google_artifact_registry_repository.this.project}/${google_artifact_registry_repository.this.repository_id}"
   }
 
