@@ -26,8 +26,9 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64,linux/arm64/v8
           push: false
+          file: ${{ env.DOCKER_PATH }}/Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm64/v8
           tags: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Run Docker container and get Nginx version
