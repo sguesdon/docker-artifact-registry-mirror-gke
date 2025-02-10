@@ -1,4 +1,4 @@
-name: Scheduler
+name: Build and publish Nginx image
 on:
   schedule:
     - cron: "0 10 * * 1"
@@ -6,7 +6,6 @@ on:
 jobs:
   build-and-publish-nginx-image:
     runs-on: ubuntu-latest
-    name: Build, publish nginx docker image
     permissions:
       contents: write
       pull-requests: write
@@ -20,7 +19,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build --plateform linux/arm64/v8,linux/amd64 -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
+          docker build --platform linux/arm64/v8,linux/amd64 -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
 
       - name: Run Docker container and get Nginx version
         id: get_version
