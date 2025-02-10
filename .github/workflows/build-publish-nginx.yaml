@@ -39,7 +39,6 @@ jobs:
           rm nginx_version.txt
           echo "Nginx version: $NGINX_VERSION"
           echo "NGINX_VERSION=$NGINX_VERSION" >> $GITHUB_ENV
-          exit 1
 
       - name: Check if Docker image exists in registry
         id: check_image
