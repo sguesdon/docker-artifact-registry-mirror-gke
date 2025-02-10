@@ -17,9 +17,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: |
-          docker build --platform linux/arm64/v8,linux/amd64 -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64,linux/arm64/v8
+          push: false
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Run Docker container and get Nginx version
         id: get_version
@@ -29,6 +38,7 @@ jobs:
           rm nginx_version.txt
           echo "Nginx version: $NGINX_VERSION"
           echo "NGINX_VERSION=$NGINX_VERSION" >> $GITHUB_ENV
+          exit 1
 
       - name: Check if Docker image exists in registry
         id: check_image
