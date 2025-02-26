@@ -87,7 +87,7 @@ jobs:
 
           echo "Updating Helm chart to version: $NEW_HELM_VERSION"
           sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" $HELM_CHART_PATH/Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: \"$NGINX_VERSION\"/" $HELM_CHART_PATH/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: $NGINX_VERSION/" $HELM_CHART_PATH/Chart.yaml
 
       - name: Create Pull Request for Helm chart update
         if: env.EXISTING_IMAGE == 'false'
