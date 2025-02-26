@@ -21,7 +21,6 @@ image:
 imagePullSecrets: []
 volumeMounts: []
 resources: {}
-tokenFilePath: /config/token
 probes:
   readinessProbe:
     httpGet:
