@@ -48,7 +48,7 @@ dependencies:
 
 ## Advanced Configuration
 
-Other configurations are available, including settings related to the NGINX cache. The behavior of the sidecar responsible for retrieving the Google token can also be modified. All the values are available [here](src/helm-chart/values.yaml).
+Other configurations are available, including settings related to the NGINX cache. All the values are available [here](src/helm-chart/values.yaml).
 
 ## Running tests
 
