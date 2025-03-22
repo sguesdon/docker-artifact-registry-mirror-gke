@@ -2,7 +2,7 @@
 [![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
 ![Test Status](https://github.com/sguesdon/docker-artifact-registry-mirror-gke/actions/workflows/tests.yaml/badge.svg?branch=main)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/docker-artifact-registry-mirror-gke)](https://artifacthub.io/packages/helm/docker-artifact-registry-mirror-gke/docker-artifact-registry-mirror-gke)
-[![Docker hub](https://img.shields.io/docker/v/sguesdon/docker-artifact-registry-mirror-gke?logo=docker&label=Docker%20hub)](https://hub.docker.com/r/sguesdon/docker-artifact-registry-mirror-gke/builds)
+[![Docker hub](https://img.shields.io/docker/v/sguesdon/docker-artifact-registry-mirror-gke?logo=docker&label=Docker%20hub)](https://hub.docker.com/r/sguesdon/docker-artifact-registry-mirror-gke/tags)
 
 # Docker Artifact Registry Mirror for GKE
 
