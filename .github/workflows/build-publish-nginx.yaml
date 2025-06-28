@@ -20,9 +20,9 @@ jobs:
       - name: Run Docker container and get Nginx version
         id: get_version
         run: |
-          docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
-          docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest -- nginx -v > nginx_version.txt 2>&1
-          NGINX_VERSION=$(cat nginx_version.txt | grep 'nginx version' | awk -F'/' '{print $2}')
+          docker build --no-cache --pull -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
+          docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest nginx -v > nginx_version.txt 2>&1
+          NGINX_VERSION=$(cat nginx_version.txt | grep 'nginx version' | awk -F'/' '{print $2}' | awk '{print $1}')
           rm nginx_version.txt
           echo "Nginx version: $NGINX_VERSION"
           echo "NGINX_VERSION=$NGINX_VERSION" >> $GITHUB_ENV

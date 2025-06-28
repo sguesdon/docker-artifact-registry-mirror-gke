@@ -1,0 +1,110 @@
+name: Build specific Nginx version
+on:
+  workflow_dispatch:
+    inputs:
+      nginx_version:
+        description: 'Nginx version to build (e.g., 1.28.0)'
+        required: true
+        type: string
+
+jobs:
+  build-specific-nginx-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      IMAGE_NAME: gke-nginx-mirror-gke
+      DOCKER_REGISTRY: sguesdon
+      DOCKER_PATH: ./src/docker
+      HELM_CHART_PATH: ./src/helm-chart
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Modify Dockerfile with specific version
+        run: |
+          # Créer une copie temporaire du Dockerfile avec la version spécifiée
+          cp $DOCKER_PATH/Dockerfile $DOCKER_PATH/Dockerfile.temp
+          sed -i "s/FROM fabiocicerchia\/nginx-lua:alpine/FROM fabiocicerchia\/nginx-lua:${{ github.event.inputs.nginx_version }}-alpine/" $DOCKER_PATH/Dockerfile.temp
+
+      - name: Verify Nginx version
+        run: |
+          docker build -t temp-nginx $DOCKER_PATH -f $DOCKER_PATH/Dockerfile.temp
+          docker run --rm temp-nginx nginx -v
+
+      - name: Check if Docker image exists in registry
+        id: check_image
+        run: |
+          IMAGE_TAG_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/$DOCKER_REGISTRY/$IMAGE_NAME/tags/${{ github.event.inputs.nginx_version }}/ | grep -o '[0-9]*')
+
+          if [ "$IMAGE_TAG_EXISTS" == "200" ]; then
+            echo "Image already exists. Skipping push."
+            echo "existing_image=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image does not exist. Will push."
+            echo "existing_image=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up QEMU
+        if: steps.check_image.outputs.existing_image == 'false'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: steps.check_image.outputs.existing_image == 'false'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: steps.check_image.outputs.existing_image == 'false'
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and push docker image
+        uses: docker/build-push-action@v6
+        if: steps.check_image.outputs.existing_image == 'false'
+        with:
+          push: true
+          file: ${{ env.DOCKER_PATH }}/Dockerfile.temp
+          platforms: |
+            linux/amd64
+            linux/arm64
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.nginx_version }}
+
+      - name: Update Helm chart version logically
+        if: steps.check_image.outputs.existing_image == 'false'
+        run: |
+          CURRENT_HELM_VERSION=$(grep '^version:' $HELM_CHART_PATH/Chart.yaml | awk '{print $2}')
+          CURRENT_NGINX_VERSION=$(grep '^appVersion:' $HELM_CHART_PATH/Chart.yaml | awk '{print $2}')
+
+          IFS='.' read -r CURRENT_MAJOR CURRENT_MINOR CURRENT_PATCH <<< "$CURRENT_HELM_VERSION"
+          IFS='.' read -r NGINX_CURRENT_MAJOR NGINX_CURRENT_MINOR NGINX_CURRENT_PATCH <<< "$CURRENT_NGINX_VERSION"
+          IFS='.' read -r NGINX_MAJOR NGINX_MINOR NGINX_PATCH <<< "${{ github.event.inputs.nginx_version }}"
+
+          if [ "$NGINX_MAJOR" -gt "$NGINX_CURRENT_MAJOR" ]; then
+            NEW_HELM_VERSION="$((CURRENT_MAJOR + 1)).0.0"
+          elif [ "$NGINX_MINOR" -gt "$NGINX_CURRENT_MINOR" ]; then
+            NEW_HELM_VERSION="$CURRENT_MAJOR.$((CURRENT_MINOR + 1)).0"
+          elif [ "$NGINX_PATCH" -gt "$NGINX_CURRENT_PATCH" ]; then
+            NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((CURRENT_PATCH + 1))"
+          else
+            NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((CURRENT_PATCH + 1))"
+          fi
+
+          echo "Updating Helm chart to version: $NEW_HELM_VERSION"
+          sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" $HELM_CHART_PATH/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: ${{ github.event.inputs.nginx_version }}/" $HELM_CHART_PATH/Chart.yaml
+
+      - name: Create Pull Request for Helm chart update
+        if: steps.check_image.outputs.existing_image == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "update(nginx): update nginx version ${{ github.event.inputs.nginx_version }}"
+          branch: chore/nginx-update-${{ github.event.inputs.nginx_version }}
+          title: "update(nginx): update nginx version ${{ github.event.inputs.nginx_version }}"
+          body: "@sguesdon Manual update to nginx version ${{ github.event.inputs.nginx_version }}"
+          base: main
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f $DOCKER_PATH/Dockerfile.temp
