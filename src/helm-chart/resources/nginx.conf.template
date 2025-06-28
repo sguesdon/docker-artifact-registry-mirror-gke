@@ -9,12 +9,14 @@
 # TOKEN_CACHE_EXPIRATION_SECONDS
 # MAX_AUTH_RETRY_ATTEMPTS
 # AUTH_TOKEN_ENDPOINT
+# DNS_RESOLVER
 
 events {
 }
 
 http {
-    resolver local=on;
+    resolver ${DNS_RESOLVER} valid=300s;
+    resolver_timeout 5s;
 
     lua_shared_dict cache 1m;
 
