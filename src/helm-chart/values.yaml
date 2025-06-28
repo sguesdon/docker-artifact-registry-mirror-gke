@@ -13,6 +13,7 @@ rewritePath: "gcp_project/registry_name"
 tokenCacheExpirationSeconds: "300"
 maxAuthRetryAttempts: "1"
 authTokenEndpoint: ""
+dnsResolver: "kube-dns.kube-system.svc.cluster.local"
 
 image:
   repository: sguesdon/gke-nginx-mirror-gke
