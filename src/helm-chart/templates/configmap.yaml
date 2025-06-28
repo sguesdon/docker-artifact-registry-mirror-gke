@@ -22,4 +22,5 @@ data:
   TOKEN_CACHE_EXPIRATION_SECONDS: {{ .Values.tokenCacheExpirationSeconds | quote }}
   MAX_AUTH_RETRY_ATTEMPTS: {{ .Values.maxAuthRetryAttempts | quote }}
   AUTH_TOKEN_ENDPOINT: {{ .Values.authTokenEndpoint | quote }}
+  DNS_RESOLVER: {{ .Values.dnsResolver | quote }}
 
