@@ -5,31 +5,31 @@ on:
   workflow_dispatch:
     inputs:
       openresty_version:
-        description: 'OpenResty version à utiliser (ex: 1.25.3.2-alpine). Laisser vide pour la dernière version.'
+        description: "OpenResty version à utiliser (ex: 1.25.3.2-alpine). Laisser vide pour la dernière version."
         required: false
-        default: ''
+        default: ""
         type: string
       force_build:
-        description: 'Forcer la construction même si l\'image existe déjà'
+        description: "Forcer la construction même si l'image existe déjà"
         required: false
         default: false
         type: boolean
       platforms:
-        description: 'Plateformes à construire'
+        description: "Plateformes à construire"
         required: false
-        default: 'linux/amd64,linux/arm64'
+        default: "linux/amd64,linux/arm64"
         type: choice
         options:
-          - 'linux/amd64,linux/arm64'
-          - 'linux/amd64'
-          - 'linux/arm64'
+          - "linux/amd64,linux/arm64"
+          - "linux/amd64"
+          - "linux/arm64"
       skip_tests:
-        description: 'Ignorer les tests pour un build rapide'
+        description: "Ignorer les tests pour un build rapide"
         required: false
         default: false
         type: boolean
       create_pr:
-        description: 'Créer une PR avec les changements (si applicable)'
+        description: "Créer une PR avec les changements (si applicable)"
         required: false
         default: true
         type: boolean
@@ -144,7 +144,7 @@ jobs:
         run: |
           # Check if build is forced
           FORCE_BUILD="${{ github.event.inputs.force_build }}"
-          
+
           # If an update is needed or force build is requested, force rebuild
           if [[ "${{ steps.get_version.outputs.update_needed }}" == "true" ]] || [[ "$FORCE_BUILD" == "true" ]]; then
             if [[ "$FORCE_BUILD" == "true" ]]; then
