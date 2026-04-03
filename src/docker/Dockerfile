@@ -16,12 +16,14 @@ RUN apk add --no-cache \
     curl \
     tzdata \
     perl \
+    luarocks \
     && apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     make \
     wget \
     perl-dev \
+    lua-dev \
     && rm -rf /var/cache/apk/*
 
 RUN opm install ledgetech/lua-resty-http \
