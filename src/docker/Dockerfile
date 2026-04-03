@@ -49,4 +49,6 @@ LABEL org.opencontainers.image.title="Docker Artifact Registry Mirror for GKE" \
     org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.source="https://github.com/sguesdon/docker-artifact-registry-mirror-gke"
 
+USER nginx
+
 CMD ["nginx", "-g", "daemon off;"]
