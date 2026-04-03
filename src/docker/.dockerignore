@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+docs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Development
+.devbox/
+devbox.json
+.devcontainer/
+.vscode/
+.idea/
+
+# Testing
+tests/
+**/test*
+**/*_test.*
+**/*.test.*
+
+# Dependencies
+node_modules/
+.npm/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Other Dockerfiles and images
+**/Dockerfile*
+**/*.dockerfile
+!Dockerfile
+
+# Helm charts (not needed for Docker build)
+../../helm-chart/
+
+# Scripts not needed in container
+../../resources/
