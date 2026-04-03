@@ -2,6 +2,9 @@ ARG OPENRESTY_VERSION=1.25.3.2-alpine
 
 FROM openresty/openresty:${OPENRESTY_VERSION}
 
+# Re-declare ARG after FROM to use in LABELs
+ARG OPENRESTY_VERSION
+
 LABEL openresty.version=${OPENRESTY_VERSION} \
     maintainer="sguesdon" \
     description="Docker Artifact Registry Mirror for GKE with OpenResty ${OPENRESTY_VERSION}"
@@ -12,11 +15,13 @@ RUN apk add --no-cache \
     ca-certificates \
     curl \
     tzdata \
+    perl \
     && apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     make \
     wget \
+    perl-dev \
     && rm -rf /var/cache/apk/*
 
 RUN opm install ledgetech/lua-resty-http \
