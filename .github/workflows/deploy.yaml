@@ -8,10 +8,10 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.11.0
+        uses: jetify-com/devbox-install-action@a9cbd387027b6a067ad5ac7c37523c4ef6ed2b0a # v0.11.0
 
       - name: Publish helm chart
         run: |
