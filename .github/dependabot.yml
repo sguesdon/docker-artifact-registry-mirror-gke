@@ -1,0 +1,65 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "10:00"
+    reviewers:
+      - "sguesdon"
+    assignees:
+      - "sguesdon"
+    labels:
+      - "dependabot"
+      - "github-actions"
+      - "manual-review"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    open-pull-requests-limit: 2
+    rebase-strategy: "disabled"
+
+  - package-ecosystem: "docker"
+    directory: "/src/docker"
+    schedule:
+      interval: "monthly"
+      day: "tuesday"
+      time: "10:00"
+    reviewers:
+      - "sguesdon"
+    assignees:
+      - "sguesdon"
+    labels:
+      - "dependabot"
+      - "docker"
+      - "openresty-update"
+      - "manual-review"
+      - "wait-15-days"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    open-pull-requests-limit: 1
+    rebase-strategy: "disabled"
+
+  - package-ecosystem: "npm"
+    directory: "/tests/fake-registry"
+    schedule:
+      interval: "monthly"
+      day: "wednesday" 
+      time: "10:00"
+    reviewers:
+      - "sguesdon"
+    assignees:
+      - "sguesdon"
+    labels:
+      - "dependabot"
+      - "npm"
+      - "tests"
+      - "manual-review"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: "increase"
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"

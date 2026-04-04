@@ -1,99 +1,298 @@
 name: Build and publish Nginx image
 on:
-  schedule:
-    - cron: "0 10 * * 1"
   workflow_dispatch:
+    inputs:
+      openresty_version:
+        description: "OpenResty version à utiliser (ex: 1.25.3.2-alpine). Laisser vide pour auto-détection."
+        required: false
+        default: ""
+        type: string
+      force_build:
+        description: "Forcer la construction même si l'image existe déjà"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: "Plateformes à construire"
+        required: false
+        default: "linux/amd64,linux/arm64"
+        type: choice
+        options:
+          - "linux/amd64,linux/arm64"
+          - "linux/amd64"
+          - "linux/arm64"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/docker/**"
+      - ".github/workflows/build-publish-nginx.yaml"
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_HUB_REGISTRY: docker.io
+  IMAGE_NAME: gke-nginx-mirror-gke
+  DOCKER_REGISTRY: sguesdon
+  DOCKER_PATH: ./src/docker
+  HELM_CHART_PATH: ./src/helm-chart
+
 jobs:
   build-and-publish-nginx-image:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-    env:
-      IMAGE_NAME: gke-nginx-mirror-gke
-      DOCKER_REGISTRY: sguesdon
-      DOCKER_PATH: ./src/docker
-      HELM_CHART_PATH: ./src/helm-chart
+      packages: write
+      security-events: write
+    outputs:
+      nginx-version: ${{ steps.get_version.outputs.nginx_version }}
+      openresty-version: ${{ steps.get_version.outputs.openresty_version }}
+      build-status: ${{ steps.build.outcome }}
+
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Docker container and get Nginx version
-        id: get_version
-        run: |
-          docker build --no-cache --pull -t $DOCKER_REGISTRY/$IMAGE_NAME:latest $DOCKER_PATH
-          docker run --rm $DOCKER_REGISTRY/$IMAGE_NAME:latest nginx -v > nginx_version.txt 2>&1
-          NGINX_VERSION=$(cat nginx_version.txt | grep 'nginx version' | awk -F'/' '{print $2}' | awk '{print $1}')
-          rm nginx_version.txt
-          echo "Nginx version: $NGINX_VERSION"
-          echo "nginx_version=$NGINX_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check if Docker image exists in registry
-        id: check_image
-        run: |
-          IMAGE_TAG_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/$DOCKER_REGISTRY/$IMAGE_NAME/tags/${{ steps.get_version.outputs.nginx_version }}/ | grep -o '[0-9]*')
-
-          if [ "$IMAGE_TAG_EXISTS" == "200" ]; then
-            echo "Image already exists. Skipping push and PR creation."
-            echo "existing_image=true" >> $GITHUB_OUTPUT
-          else
-            echo "Image does not exist. Will push and create PR."
-            echo "existing_image=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Set up QEMU
-        if: steps.check_image.outputs.existing_image == 'false'
-        uses: docker/setup-qemu-action@v3
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
-        if: steps.check_image.outputs.existing_image == 'false'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.7.1
+        with:
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ${{ env.DOCKER_HUB_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Get OpenResty version from Dockerfile
+        id: get_version
+        run: |
+          # Extract OpenResty version from Dockerfile (updated by Dependabot)
+          if [ -n "${{ github.event.inputs.openresty_version }}" ]; then
+            # Manual version specified
+            TARGET_OPENRESTY="${{ github.event.inputs.openresty_version }}"
+            echo "Using manual OpenResty version: $TARGET_OPENRESTY"
+            # Update Dockerfile for manual builds
+            sed -i "s/^ARG OPENRESTY_VERSION=.*/ARG OPENRESTY_VERSION=$TARGET_OPENRESTY/" ${{ env.DOCKER_PATH }}/Dockerfile
+          else
+            # Use version from Dockerfile (Dependabot or existing)
+            TARGET_OPENRESTY=$(grep '^ARG OPENRESTY_VERSION=' ${{ env.DOCKER_PATH }}/Dockerfile | cut -d'=' -f2)
+            echo "Using Dockerfile OpenResty version: $TARGET_OPENRESTY"
+          fi
+
+          # Extract nginx version for tagging
+          NGINX_VERSION=$(echo "$TARGET_OPENRESTY" | sed 's/^\([0-9]*\.[0-9]*\.[0-9]*\)\..*$/\1/')
+
+          echo "openresty_version=$TARGET_OPENRESTY" >> $GITHUB_OUTPUT
+          echo "nginx_version=$NGINX_VERSION" >> $GITHUB_OUTPUT
+          echo "🏷️ OpenResty: $TARGET_OPENRESTY → Nginx: $NGINX_VERSION"
+
+      - name: Check if build needed
+        id: check_build
+        run: |
+          FORCE_BUILD="${{ github.event.inputs.force_build }}"
+
+          if [[ "$FORCE_BUILD" == "true" ]]; then
+            echo "🔨 Force build requested"
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "🚀 Push trigger - building after Dockerfile change"
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ Manual workflow - building with current/specified version"
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract metadata
+        if: steps.check_build.outputs.build_needed == 'true'
+        id: meta
+        uses: docker/metadata-action@70b2cdc6480c1bd2c260e2a196a6fec40a75334b # v5.5.0
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            ${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.get_version.outputs.openresty_version }}
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+            type=ref,event=pr
+          labels: |
+            org.opencontainers.image.title=Docker Artifact Registry Mirror for GKE
+            org.opencontainers.image.description=Nginx-based mirror for Google Cloud Artifact Registry with automatic authentication
+            org.opencontainers.image.vendor=sguesdon
+            org.opencontainers.image.licenses=MIT
+            nginx.version=${{ steps.get_version.outputs.nginx_version }}
+            openresty.version=${{ steps.get_version.outputs.openresty_version }}
+
+      - name: Build and push Docker image
+        if: steps.check_build.outputs.build_needed == 'true'
+        id: build
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c167d0c30ce54196fd # v6.9.0
+        with:
+          context: ${{ env.DOCKER_PATH }}
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            OPENRESTY_VERSION=${{ steps.get_version.outputs.openresty_version }}
+            NGINX_VERSION=${{ steps.get_version.outputs.nginx_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Generate SBOM
+        if: steps.check_build.outputs.build_needed == 'true'
+        uses: anchore/sbom-action@fc46efb4c87b4e1a08a6ac95a300500c801840ee # v0.17.8
+        with:
+          image: "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.openresty_version }}"
+          format: spdx-json
+          output-file: "sbom.spdx.json"
+
+      - name: Upload SBOM as artifact
+        if: steps.check_build.outputs.build_needed == 'true'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: sbom-${{ steps.get_version.outputs.openresty_version }}
+          path: sbom.spdx.json
+
+      - name: Update Helm chart
+        if: steps.check_build.outputs.build_needed == 'true' && github.event_name == 'push'
+        run: |
+          OPENRESTY_VERSION="${{ steps.get_version.outputs.openresty_version }}"
+          NGINX_VERSION="${{ steps.get_version.outputs.nginx_version }}"
+
+          echo "🎯 Updating Helm chart with OpenResty $OPENRESTY_VERSION"
+
+          # Update appVersion in Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: $OPENRESTY_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+
+          # Update default image tag in values.yaml  
+          sed -i 's/tag: ".*"/tag: "'$OPENRESTY_VERSION'"/' ${{ env.HELM_CHART_PATH }}/values.yaml
+
+          # Increment patch version in Chart.yaml
+          CURRENT_HELM_VERSION=$(grep '^version:' ${{ env.HELM_CHART_PATH }}/Chart.yaml | awk '{print $2}')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_HELM_VERSION"
+          NEW_HELM_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+          sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+
+          echo "✅ Helm chart updated: $CURRENT_HELM_VERSION → $NEW_HELM_VERSION"
+
+      - name: Commit Helm chart changes
+        if: steps.check_build.outputs.build_needed == 'true' && github.event_name == 'push'
+        run: |
+          if [[ -n $(git status --porcelain ${{ env.HELM_CHART_PATH }}) ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add ${{ env.HELM_CHART_PATH }}/Chart.yaml ${{ env.HELM_CHART_PATH }}/values.yaml
+            git commit -m "chore(helm): update chart for OpenResty ${{ steps.get_version.outputs.openresty_version }}
+
+            - appVersion: ${{ steps.get_version.outputs.openresty_version }}  
+            - imageTag: ${{ steps.get_version.outputs.openresty_version }}
+            - Auto-updated after successful Docker build"
+            git push
+            echo "✅ Helm chart changes committed and pushed"
+          else
+            echo "ℹ️ No Helm chart changes to commit"  
+          fi
+          fi
+
+          echo "New Helm chart version: $NEW_HELM_VERSION"
+          echo "Change type: $CHANGE_TYPE"
+
+          # Update Chart.yaml
+          sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: $OPENRESTY_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+
+          # Update default image tag in values.yaml
+          sed -i 's/tag: ".*"/tag: "'$OPENRESTY_VERSION'"/' ${{ env.HELM_CHART_PATH }}/values.yaml
+
+          echo "helm_version=$NEW_HELM_VERSION" >> $GITHUB_OUTPUT
+          echo "change_type=$CHANGE_TYPE" >> $GITHUB_OUTPUT
+          echo "openresty_version=$OPENRESTY_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Validate Helm chart
+        run: |
+          helm lint ${{ env.HELM_CHART_PATH }}
+          helm template test ${{ env.HELM_CHART_PATH }} > /dev/null
+
+      - name: Create Pull Request for Helm chart update
+        uses: peter-evans/create-pull-request@8867c4aba1b742c39f8d0ba35429c2dfa4b6cb20 # v7.0.5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore(openresty): update OpenResty to v${{ steps.update_chart.outputs.openresty_version }}
+
+            - OpenResty version: ${{ steps.update_chart.outputs.openresty_version }}
+            - Helm chart version: ${{ steps.update_chart.outputs.helm_version }}
+            - Change type: ${{ steps.update_chart.outputs.change_type }}
+            - Image digest: ${{ needs.build-and-publish-nginx-image.outputs.image-digest }}
+          branch: chore/openresty-update-${{ steps.update_chart.outputs.openresty_version }}
+          title: "chore(openresty): update OpenResty to v${{ steps.update_chart.outputs.openresty_version }}"
+          body: |
+            ## 🚀 OpenResty Update
+
+            This PR updates OpenResty from the previous version to **${{ steps.update_chart.outputs.openresty_version }}**.
+
+            ### Changes
+            - **OpenResty version**: ${{ steps.update_chart.outputs.openresty_version }}
+            - **Nginx version**: ${{ needs.build-and-publish-nginx-image.outputs.nginx-version }}
+            - **Helm chart version**: ${{ steps.update_chart.outputs.helm_version }}
+            - **Change type**: ${{ steps.update_chart.outputs.change_type }}
+            - **Image digest**: `${{ needs.build-and-publish-nginx-image.outputs.image-digest }}`
+
+            ### Details
+            - **Image tag**: `${{ steps.update_chart.outputs.openresty_version }}` (follows OpenResty versioning)
+            - ✅ SBOM generated and attached
+            - ✅ Multi-arch build (amd64, arm64)
+            - ✅ Signed with provenance
+
+            ### Registries Updated
+            - 🐙 GitHub Container Registry: `ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.update_chart.outputs.openresty_version }}`
+            - 🐳 Docker Hub: `${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.update_chart.outputs.openresty_version }}`
+
+            **Note**: This PR was automatically generated by the CI/CD pipeline when a new OpenResty version was detected.
+
+            @${{ github.repository_owner }} please review and merge if everything looks good!
+          base: main
+          labels: |
+            automated
+            openresty-update
+            ${{ steps.update_chart.outputs.change_type }}-update
 
       - name: Login to Docker Hub
         if: steps.check_image.outputs.existing_image == 'false'
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
       - name: Build and push docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c167d0c30ce54196fd # v6.9.0
         if: steps.check_image.outputs.existing_image == 'false'
         with:
           push: true
           file: ${{ env.DOCKER_PATH }}/Dockerfile
+          context: ${{ env.DOCKER_PATH }}
           platforms: |
             linux/amd64
             linux/arm64
+          build-args: |
+            OPENRESTY_VERSION=${{ needs.build-and-publish-nginx-image.outputs.openresty-version }}
+            NGINX_VERSION=${{ needs.build-and-publish-nginx-image.outputs.nginx-version }}
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.nginx_version }}
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-publish-nginx-image.outputs.openresty-version }}
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-      - name: Update Helm chart version logically
-        if: steps.check_image.outputs.existing_image == 'false'
-        run: |
-          CURRENT_HELM_VERSION=$(grep '^version:' $HELM_CHART_PATH/Chart.yaml | awk '{print $2}')
-          CURRENT_NGINX_VERSION=$(grep '^appVersion:' $HELM_CHART_PATH/Chart.yaml | awk '{print $2}')
-
-          IFS='.' read -r CURRENT_MAJOR CURRENT_MINOR CURRENT_PATCH <<< "$CURRENT_HELM_VERSION"
-          IFS='.' read -r NGINX_CURRENT_MAJOR NGINX_CURRENT_MINOR NGINX_CURRENT_PATCH <<< "$CURRENT_NGINX_VERSION"
-          IFS='.' read -r NGINX_MAJOR NGINX_MINOR NGINX_PATCH <<< "${{ steps.get_version.outputs.nginx_version }}"
-
-          if [ "$NGINX_MAJOR" -gt "$NGINX_CURRENT_MAJOR" ]; then
-            NEW_HELM_VERSION="$((CURRENT_MAJOR + 1)).0.0"
-          elif [ "$NGINX_MINOR" -gt "$NGINX_CURRENT_MINOR" ]; then
-            NEW_HELM_VERSION="$CURRENT_MAJOR.$((CURRENT_MINOR + 1)).0"
-          elif [ "$NGINX_PATCH" -gt "$NGINX_CURRENT_PATCH" ]; then
-            NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((CURRENT_PATCH + 1))"
-          fi
-
-          echo "Updating Helm chart to version: $NEW_HELM_VERSION"
-          sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" $HELM_CHART_PATH/Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: ${{ steps.get_version.outputs.nginx_version }}/" $HELM_CHART_PATH/Chart.yaml
-
-      - name: Create Pull Request for Helm chart update
-        if: steps.check_image.outputs.existing_image == 'false'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "update(nginx): update nginx version ${{ steps.get_version.outputs.nginx_version }}"
-          branch: chore/nginx-update-${{ steps.get_version.outputs.nginx_version }}
-          title: "update(nginx): update nginx version ${{ steps.get_version.outputs.nginx_version }}"
-          body: "@sguesdon please review this PR to update the nginx version in the Helm chart."
-          base: main

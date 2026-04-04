@@ -8,12 +8,15 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.11.0
+        uses: jetify-com/devbox-install-action@a03caf5813591bc882139eba6ae947930a83a427 # v0.11.0
 
       - name: Publish helm chart
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          echo "${DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u ${DOCKER_USERNAME} --password-stdin
           devbox run publish oci://registry-1.docker.io/sguesdon ${{ github.ref_name }}
