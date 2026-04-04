@@ -134,8 +134,8 @@ jobs:
             echo "openresty_version=$CURRENT_OPENRESTY" >> $GITHUB_OUTPUT
           fi
 
-          # Extract nginx version for image tagging
-          NGINX_VERSION=$(echo "$TARGET_OPENRESTY" | cut -d'-' -f1)
+          # Extract nginx version for image tagging (use same regex as Dockerfile)
+          NGINX_VERSION=$(echo "$TARGET_OPENRESTY" | sed 's/^\([0-9]*\.[0-9]*\.[0-9]*\)\..*$/\1/')
           echo "🏷️ Nginx version (for tagging): $NGINX_VERSION"
           echo "nginx_version=$NGINX_VERSION" >> $GITHUB_OUTPUT
 
@@ -162,7 +162,7 @@ jobs:
 
             # Check Docker Hub  
             DOCKERHUB_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
-              "https://hub.docker.com/v2/repositories/${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}/tags/${{ steps.get_version.outputs.nginx_version }}/" | grep -o '[0-9]*')
+              "https://hub.docker.com/v2/repositories/${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}/tags/${{ steps.get_version.outputs.openresty_version }}/" | grep -o '[0-9]*')
 
             if [[ "$GHCR_EXISTS" == "200" ]] && [[ "$DOCKERHUB_EXISTS" == "200" ]]; then
               echo "✅ Image already exists on both registries and no update detected. Skipping build."
@@ -184,7 +184,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
             ${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ steps.get_version.outputs.nginx_version }}
+            type=raw,value=${{ steps.get_version.outputs.openresty_version }}
             type=raw,value=latest
             type=sha,prefix={{branch}}-
             type=ref,event=branch
@@ -207,6 +207,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            OPENRESTY_VERSION=${{ steps.get_version.outputs.openresty_version }}
+            NGINX_VERSION=${{ steps.get_version.outputs.nginx_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: true
@@ -216,7 +219,7 @@ jobs:
         if: steps.check_image.outputs.existing_image == 'false' && github.event.inputs.skip_tests != 'true'
         uses: anchore/sbom-action@v0
         with:
-          image: "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.nginx_version }}"
+          image: "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.openresty_version }}"
           format: spdx-json
           output-file: "sbom.spdx.json"
 
@@ -224,7 +227,7 @@ jobs:
         if: steps.check_image.outputs.existing_image == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ steps.get_version.outputs.nginx_version }}
+          name: sbom-${{ steps.get_version.outputs.openresty_version }}
           path: sbom.spdx.json
 
   update-helm-chart:
@@ -244,27 +247,28 @@ jobs:
       - name: Update Helm chart version logically
         id: update_chart
         run: |
+          OPENRESTY_VERSION="${{ needs.build-and-publish-nginx-image.outputs.openresty-version }}"
           NGINX_VERSION="${{ needs.build-and-publish-nginx-image.outputs.nginx-version }}"
           CURRENT_HELM_VERSION=$(grep '^version:' ${{ env.HELM_CHART_PATH }}/Chart.yaml | awk '{print $2}')
-          CURRENT_NGINX_VERSION=$(grep '^appVersion:' ${{ env.HELM_CHART_PATH }}/Chart.yaml | awk '{print $2}')
+          CURRENT_APP_VERSION=$(grep '^appVersion:' ${{ env.HELM_CHART_PATH }}/Chart.yaml | awk '{print $2}')
 
           echo "Current Helm version: $CURRENT_HELM_VERSION"
-          echo "Current Nginx version: $CURRENT_NGINX_VERSION"
-          echo "New Nginx version: $NGINX_VERSION"
+          echo "Current App version: $CURRENT_APP_VERSION"
+          echo "New OpenResty version: $OPENRESTY_VERSION"
 
           # Parse semantic versions
           IFS='.' read -r CURRENT_MAJOR CURRENT_MINOR CURRENT_PATCH <<< "$CURRENT_HELM_VERSION"
-          IFS='.' read -r NGINX_CURRENT_MAJOR NGINX_CURRENT_MINOR NGINX_CURRENT_PATCH <<< "$CURRENT_NGINX_VERSION"
-          IFS='.' read -r NGINX_MAJOR NGINX_MINOR NGINX_PATCH <<< "$NGINX_VERSION"
+          IFS='.' read -r APP_CURRENT_MAJOR APP_CURRENT_MINOR APP_CURRENT_PATCH <<< "$CURRENT_APP_VERSION"
+          IFS='.' read -r OPENRESTY_MAJOR OPENRESTY_MINOR OPENRESTY_PATCH <<< "$OPENRESTY_VERSION"
 
-          # Determine new Helm version based on Nginx version changes
-          if [ "$NGINX_MAJOR" -gt "$NGINX_CURRENT_MAJOR" ]; then
+          # Determine new Helm version based on OpenResty version changes
+          if [ "$OPENRESTY_MAJOR" -gt "$APP_CURRENT_MAJOR" ]; then
             NEW_HELM_VERSION="$((CURRENT_MAJOR + 1)).0.0"
             CHANGE_TYPE="major"
-          elif [ "$NGINX_MINOR" -gt "$NGINX_CURRENT_MINOR" ]; then
+          elif [ "$OPENRESTY_MINOR" -gt "$APP_CURRENT_MINOR" ]; then
             NEW_HELM_VERSION="$CURRENT_MAJOR.$((CURRENT_MINOR + 1)).0"
             CHANGE_TYPE="minor"
-          elif [ "$NGINX_PATCH" -gt "$NGINX_CURRENT_PATCH" ]; then
+          elif [ "$OPENRESTY_PATCH" -gt "$APP_CURRENT_PATCH" ]; then
             NEW_HELM_VERSION="$CURRENT_MAJOR.$CURRENT_MINOR.$((CURRENT_PATCH + 1))"
             CHANGE_TYPE="patch"
           else
@@ -278,14 +282,14 @@ jobs:
 
           # Update Chart.yaml
           sed -i "s/^version:.*/version: $NEW_HELM_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: $NGINX_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: $OPENRESTY_VERSION/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
 
           # Update default image tag in values.yaml
-          sed -i 's/tag: ".*"/tag: "'$NGINX_VERSION'"/' ${{ env.HELM_CHART_PATH }}/values.yaml
+          sed -i 's/tag: ".*"/tag: "'$OPENRESTY_VERSION'"/' ${{ env.HELM_CHART_PATH }}/values.yaml
 
           echo "helm_version=$NEW_HELM_VERSION" >> $GITHUB_OUTPUT
           echo "change_type=$CHANGE_TYPE" >> $GITHUB_OUTPUT
-          echo "nginx_version=$NGINX_VERSION" >> $GITHUB_OUTPUT
+          echo "openresty_version=$OPENRESTY_VERSION" >> $GITHUB_OUTPUT
 
       - name: Validate Helm chart
         run: |
@@ -297,42 +301,43 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: |
-            chore(nginx): update nginx to v${{ steps.update_chart.outputs.nginx_version }}
+            chore(openresty): update OpenResty to v${{ steps.update_chart.outputs.openresty_version }}
 
-            - Nginx version: ${{ steps.update_chart.outputs.nginx_version }}
+            - OpenResty version: ${{ steps.update_chart.outputs.openresty_version }}
             - Helm chart version: ${{ steps.update_chart.outputs.helm_version }}
             - Change type: ${{ steps.update_chart.outputs.change_type }}
             - Image digest: ${{ needs.build-and-publish-nginx-image.outputs.image-digest }}
-          branch: chore/nginx-update-${{ steps.update_chart.outputs.nginx_version }}
-          title: "chore(nginx): update nginx to v${{ steps.update_chart.outputs.nginx_version }}"
+          branch: chore/openresty-update-${{ steps.update_chart.outputs.openresty_version }}
+          title: "chore(openresty): update OpenResty to v${{ steps.update_chart.outputs.openresty_version }}"
           body: |
-            ## 🚀 Nginx Update
+            ## 🚀 OpenResty Update
 
-            This PR updates the nginx version from the previous version to **${{ steps.update_chart.outputs.nginx_version }}**.
+            This PR updates OpenResty from the previous version to **${{ steps.update_chart.outputs.openresty_version }}**.
 
             ### Changes
-            - **Nginx version**: ${{ steps.update_chart.outputs.nginx_version }}
+            - **OpenResty version**: ${{ steps.update_chart.outputs.openresty_version }}
+            - **Nginx version**: ${{ needs.build-and-publish-nginx-image.outputs.nginx-version }}
             - **Helm chart version**: ${{ steps.update_chart.outputs.helm_version }}
             - **Change type**: ${{ steps.update_chart.outputs.change_type }}
             - **Image digest**: `${{ needs.build-and-publish-nginx-image.outputs.image-digest }}`
 
             ### Details
-            - **OpenResty version**: ${{ needs.build-and-publish-nginx-image.outputs.openresty-version }}
+            - **Image tag**: `${{ steps.update_chart.outputs.openresty_version }}` (follows OpenResty versioning)
             - ✅ SBOM generated and attached
             - ✅ Multi-arch build (amd64, arm64)
             - ✅ Signed with provenance
 
             ### Registries Updated
-            - 🐙 GitHub Container Registry: `ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.update_chart.outputs.nginx_version }}`
-            - 🐳 Docker Hub: `${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.update_chart.outputs.nginx_version }}`
+            - 🐙 GitHub Container Registry: `ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.update_chart.outputs.openresty_version }}`
+            - 🐳 Docker Hub: `${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.update_chart.outputs.openresty_version }}`
 
-            **Note**: This PR was automatically generated by the CI/CD pipeline.
+            **Note**: This PR was automatically generated by the CI/CD pipeline when a new OpenResty version was detected.
 
             @${{ github.repository_owner }} please review and merge if everything looks good!
           base: main
           labels: |
             automated
-            nginx-update
+            openresty-update
             ${{ steps.update_chart.outputs.change_type }}-update
 
       - name: Login to Docker Hub
@@ -346,11 +351,15 @@ jobs:
         with:
           push: true
           file: ${{ env.DOCKER_PATH }}/Dockerfile
+          context: ${{ env.DOCKER_PATH }}
           platforms: |
             linux/amd64
             linux/arm64
+          build-args: |
+            OPENRESTY_VERSION=${{ needs.build-and-publish-nginx-image.outputs.openresty-version }}
+            NGINX_VERSION=${{ needs.build-and-publish-nginx-image.outputs.nginx-version }}
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.nginx_version }}
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-publish-nginx-image.outputs.openresty-version }}
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Update Helm chart version logically

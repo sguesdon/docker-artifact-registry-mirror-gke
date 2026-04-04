@@ -1,25 +1,28 @@
 ARG OPENRESTY_VERSION=1.25.3.2-alpine-fat
+ARG NGINX_VERSION=1.25.3
 
 FROM openresty/openresty:${OPENRESTY_VERSION}
 
-# Re-declare ARG after FROM to use in LABELs
-ARG OPENRESTY_VERSION
+ARG OPENRESTY_VERSION  
+ARG NGINX_VERSION
 
 LABEL openresty.version=${OPENRESTY_VERSION} \
-    maintainer="sguesdon" \
-    description="Docker Artifact Registry Mirror for GKE with OpenResty ${OPENRESTY_VERSION}"
+    nginx.version=${NGINX_VERSION} \
+    org.opencontainers.image.title="Docker Artifact Registry Mirror for GKE" \
+    org.opencontainers.image.description="Nginx-based mirror for Google Cloud Artifact Registry with automatic authentication using OpenResty ${OPENRESTY_VERSION}" \
+    org.opencontainers.image.vendor="sguesdon" \
+    org.opencontainers.image.licenses="MIT" \
+    org.opencontainers.image.source="https://github.com/sguesdon/docker-artifact-registry-mirror-gke"
 
 RUN apk add coreutils gcc musl-dev wget \
     && apk cache clean
 
 RUN opm get ledgetech/lua-resty-http
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 80
 
-LABEL org.opencontainers.image.title="Docker Artifact Registry Mirror for GKE" \
-    org.opencontainers.image.description="Nginx-based mirror for Google Cloud Artifact Registry with automatic authentication" \
-    org.opencontainers.image.vendor="sguesdon" \
-    org.opencontainers.image.licenses="MIT" \
-    org.opencontainers.image.source="https://github.com/sguesdon/docker-artifact-registry-mirror-gke"
-
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

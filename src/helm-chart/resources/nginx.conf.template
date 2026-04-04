@@ -31,6 +31,7 @@ http {
         end
 
         local endpoint_token = getenv_with_default("AUTH_TOKEN_ENDPOINT", "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token")
+        token_cache_expiration = tonumber(getenv_with_default("TOKEN_CACHE_EXPIRATION_SECONDS", "300"))
 
         local function get_service_account_token()
 
@@ -140,7 +141,7 @@ http {
             proxy_pass ${UPSTREAM_PROTOCOL}://${UPSTREAM_HOST};
 
             # URL rewriting specific to /v2/
-            set $base_rewrite_path ${BASE_REWRITE_PATH};
+            set $base_rewrite_path "${BASE_REWRITE_PATH}";
             if ($request_uri ~* "^/v2/(.+)$") {
                 rewrite ^/v2/(.+)$ /v2/$base_rewrite_path/$1 break;
             }
