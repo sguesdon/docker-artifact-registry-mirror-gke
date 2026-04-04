@@ -3,8 +3,8 @@ ARG NGINX_VERSION=1.25.3
 
 FROM openresty/openresty:${OPENRESTY_VERSION}
 
-ARG OPENRESTY_VERSION  
-ARG NGINX_VERSION
+ARG OPENRESTY_VERSION=1.25.3.2-alpine-fat
+ARG NGINX_VERSION=1.25.3
 
 LABEL openresty.version=${OPENRESTY_VERSION} \
     nginx.version=${NGINX_VERSION} \
@@ -22,9 +22,7 @@ RUN opm get ledgetech/lua-resty-http
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-USER nobody
-
 EXPOSE 80
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
