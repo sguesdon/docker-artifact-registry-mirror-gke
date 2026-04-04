@@ -141,6 +141,8 @@ jobs:
 
       - name: Check if image exists
         id: check_image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Check if build is forced
           FORCE_BUILD="${{ github.event.inputs.force_build }}"
@@ -157,7 +159,7 @@ jobs:
           else
             # Check GitHub Container Registry
             GHCR_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
               "https://ghcr.io/v2/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/tags/list" | grep -o '[0-9]*')
 
             # Check Docker Hub  
@@ -342,8 +344,11 @@ jobs:
 
       - name: Login to Docker Hub
         if: steps.check_image.outputs.existing_image == 'false'
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
       - name: Build and push docker image
         uses: docker/build-push-action@48aba3b46d1b1fec4febb7c167d0c30ce54196fd # v6.9.0
