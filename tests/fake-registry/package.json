@@ -20,6 +20,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "jest-util": "^29.7.0"
+    "jest-util": "^30.3.0"
   }
 }
