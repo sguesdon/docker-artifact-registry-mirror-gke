@@ -22,6 +22,8 @@ RUN opm get ledgetech/lua-resty-http
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+USER nobody
+
 EXPOSE 80
 
 ENTRYPOINT ["/entrypoint.sh"]
